@@ -9,13 +9,13 @@ def recognized_protocol(s, recognizer, dir_folder):
     receive_all(s, dir_folder)
 
 
-def sync_protocol(path, server_ip, server_port, recognizer):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((server_ip, int(server_port)))
-    event_handler = MonitorFolder(socket, recognizer)
-    observer = Observer()
-    observer.schedule(event_handler, path, recursive=True)
-    observer.start()
+# def sync_protocol(path, server_ip, server_port, recognizer):
+#     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#     s.connect((server_ip, int(server_port)))
+#     event_handler = MonitorFolder(socket, recognizer)
+#     observer = Observer()
+#     observer.schedule(event_handler, path, recursive=True)
+#     observer.start()
 
 
 def main(server_ip, server_port, dir_folder, recognizer, time):
@@ -28,12 +28,12 @@ def main(server_ip, server_port, dir_folder, recognizer, time):
     else:
         recognized_protocol(s, recognizer, dir_folder)
     s.close()
-    # i=0
+    # i = 0
     # while True:
     #     print(str(i))
-    #     i = i+1
+    #     i = i + 1
     #     sleep(int(time))
-    #     sync_protocol(dir_folder,server_ip,server_port,recognizer)
+    #     sync_protocol(dir_folder, server_ip, server_port, recognizer)
 
 
 def no_recognied_protocol(s, recognizer, source_folder_path):
@@ -44,7 +44,7 @@ def no_recognied_protocol(s, recognizer, source_folder_path):
 
 
 if __name__ == "__main__":
-    RECOGNIZE = "rhD5EtKGBkMmCewufNLnttdlwJlsgWRsw3zJbcqKxBzfnH1hy3SDIb5HRIYTCw25RNXVtJwD2BiKsOuAbRqwoRbdCqpQZrKltrLudDuAdUlhQMZWh6mFgGzRAnJw6LMI"
+    RECOGNIZE = "aeEphMJf2iZxXIMvLP01FcNv0gHh4r5TSmHfvfJbubIBXKeuc5Z6qv74xA2ezkDCPVPRlgLLvVmwwW3bb2v7lPEdVsF7vGZSDWiZhEACWFUtAAHSi2pfOzNmp6BXd77q"
     # if len(sys.argv) < 5 or len(sys.argv) > 6:
     #     exit()
     # elif len(sys.argv) == 6:
