@@ -22,10 +22,8 @@ def no_recognied_protocol(s, recognizer, recognizer_size, clients_dic):
 def recognized_protocol(socket, recognizer, client_dic):
     path = client_dic.get(recognizer)
     main_dir = os.listdir(path)[0]
-    print("path = " + str(path))
-    print("main_dir = " + str(main_dir))
-    path = os.path.join(path, main_dir)
-    send_all(socket, path)
+    in_path = os.path.join(path, main_dir)
+    send_all(socket, in_path,path)
 
 
 def main(server_port, recognizer_size):
@@ -54,14 +52,12 @@ def main(server_port, recognizer_size):
         if client_recognizer == CLIENT_NOT_RECOGNIZED:
             no_recognied_protocol(client_socket, client_recognizer, recognizer_size, clients_dic)
         else:
-            print("client_recognizer = "+ client_recognizer)
             if client_recognizer == "on_deleted":
                 client_recognizer = client_socket.recv(recognizer_size).decode(FORMAT)
                 client_socket.send(b'client_recognizer received')
                 dir_to_delete = client_socket.recv(SIZE)
                 client_socket.send(b'on_deleted received')
                 os.remove(os.path.join(clients_dic[client_recognizer], dir_to_delete))
-                print(os.path.join(clients_dic[client_recognizer], dir_to_delete))
             else:
                 recognized_protocol(client_socket, client_recognizer, clients_dic)
 

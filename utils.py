@@ -1,3 +1,4 @@
+
 import os
 import string
 import random
@@ -24,10 +25,8 @@ class MonitorFolder(FileSystemEventHandler):
         self.r = recognizer
 
     def on_created(self, event):
-        print("on_created")
-
-    # def on_modified(self, event):
-    #     print("on_modified")
+        pass
+        # def on_modified(self, event):
 
     def on_deleted(self, event):
         self.s.settimeout(5)
@@ -59,9 +58,9 @@ def get_random_string(length):
         random.choice(string.ascii_lowercase + string.digits + string.ascii_uppercase) for i in range(length))
 
 
-def send_file_data(socket, file_name, path):
+def send_file_data(socket, file_name, path,start):
     # send to server the file name
-    socket.send(file_name.encode(FORMAT))
+    socket.send(os.path.join(os.path.relpath(path,start),file_name).encode(FORMAT))
     socket.recv(SIZE).decode(FORMAT)
     # open the file and read data
     new_file = open(os.path.join(path, file_name), 'rb')
@@ -76,32 +75,34 @@ def send_file_data(socket, file_name, path):
     new_file.close()
 
 
-def send_dir_inf(socket, source_folder_path):
+def send_dir_inf(socket, source_folder_path,start):
+    # start_with_folder = os.path.basename(source_folder_path)
     for dir_path, dirs_list, files_list in os.walk(source_folder_path, topdown=True):
         # send the dir_path.
         socket.send(dir_path.encode(FORMAT))
         socket.recv(SIZE)
         # sending all the dirs names
         for dir_name in dirs_list:
-            socket.send(dir_name.encode(FORMAT))
+            socket.send(os.path.join(os.path.relpath(dir_path,start),dir_name).encode(FORMAT))
             socket.recv(SIZE).decode(FORMAT)
         # finished with sending the dirs and starting with sending the files
         socket.send(END_DIRS.encode(FORMAT))
         socket.recv(SIZE).decode(FORMAT)
         for file_name in files_list:
-            send_file_data(socket, file_name, dir_path)
+            send_file_data(socket, file_name, dir_path, start)
         # finished with sending all
         socket.send(END_FILES.encode(FORMAT))
         socket.recv(SIZE)
     socket.send(END_SEND_ALL)
 
 
-def send_all(socket, source_dir_path):
+def send_all(socket, source_dir_path,start):
     # send thee name of the file or folder
     folder_normpath = os.path.normpath(source_dir_path)
     folder_name = os.path.basename(folder_normpath)
+
     # socket.send(folder_name.encode(FORMAT))
-    send_dir_inf(socket, source_dir_path)
+    send_dir_inf(socket, source_dir_path,start)
 
 
 def receive_dirs_from_path(socket, path):
@@ -117,13 +118,11 @@ def receive_dirs_from_path(socket, path):
 
 
 def receive_files_from_path(socket, path):
-    file_name = os.path.basename(bytes(socket.recv(SIZE)).decode(FORMAT))
-
+    file_name = bytes(socket.recv(SIZE)).decode(FORMAT)
     socket.send(b'file_name received')
     while not file_name == END_FILES:
         # creates the file
         file_path = os.path.join(path, file_name)
-
         with open(file_path, 'wb') as f:
             file_data = socket.recv(SIZE)
 
@@ -134,28 +133,25 @@ def receive_files_from_path(socket, path):
 
                 socket.send(b'file_data received')
         f.close()
-        file_name = os.path.basename(bytes(socket.recv(SIZE)).decode(FORMAT))
+        file_name = bytes(socket.recv(SIZE)).decode(FORMAT)
 
         socket.send(b'file_name received')
 
 
 def receive_all(socket, put_in_folder_path):
-    path = put_in_folder_path
-    # receive dir
+    # receive the main dir
     dir = bytes(socket.recv(SIZE)).decode(FORMAT)
-
     socket.send(b' dir received')
-    path = os.path.join(path, os.path.basename(dir))
-
+    path = os.path.join(put_in_folder_path, os.path.basename(dir))
     os.makedirs(path)
 
     while not dir == END_SEND_ALL.decode(FORMAT):
         # receive all the folders in dir
-        receive_dirs_from_path(socket, path)
+        receive_dirs_from_path(socket, put_in_folder_path)
 
         # receive all the files in dir
-        receive_files_from_path(socket, path)
+        receive_files_from_path(socket, put_in_folder_path)
 
         dir = bytes(socket.recv(SIZE)).decode(FORMAT)
         socket.send(b' dir received')
-        path = os.path.join(path, os.path.basename(dir))
+        # path = os.path.join(put_in_folder_path, os.path.basename(dir))
