@@ -2,9 +2,11 @@ import os
 import string
 import random
 import time
-from watchdog.observers import Observer
-from watchdog.events import PatternMatchingEventHandler
+from watchdog.observers.api import ObservedWatch
+from watchdog.events import PatternMatchingEventHandler, FileSystemEventHandler
 from watchdog.observers.api import EventEmitter
+from watchdog.observers.api import EventQueue
+from watchdog.observers import Observer
 
 import socket
 
@@ -18,57 +20,63 @@ END_ONE_FILE = b'End one file'
 END_SEND_ALL = b'end_send_all'
 
 
-# class MonitorFolder(FileSystemEventHandler):
-#     s = socket
-#     r = ''
-#
-#     def __init__(self, s,recognizer):
-#         self.s = s
-#         self.r = recognizer
+class MonitorFolder(FileSystemEventHandler):
+
+    def __init__(self, des_socket, recognizer, event_queue):
+        self.s = des_socket
+        self.r = recognizer
+        self.event_queue = event_queue
+
+    def get_queue(self):
+        return self.event_queue
+
+    def on_created(self, event):
+        """Called when a file or directory is created.
+        :param **kwargs:
+        :param event:
+            Event representing file/directory creation.
+        """
+        print(f"on_created: {event.src_path}")
+        self.event_queue.put(event)
 
 
-def on_created(event):
-    """Called when a file or directory is created.
-    :param event:
-        Event representing file/directory creation.
-    """
-    print(f"on_created: {event.src_path}")
+    def on_deleted(self, event):
+        """Called when a file or directory is deleted.
+         :param event:
+             Event representing file/directory deletion.
+         """
+        print(f"on_deleted: {event.src_path}")
+        self.event_queue.put(event)
 
 
-def on_deleted(event):
-    """Called when a file or directory is deleted.
-     :param event:
-         Event representing file/directory deletion.
-     """
-    print(f"on_deleted: {event.src_path}")
+    def on_modified(self, event):
+        """Called when a file or directory is modified.
+         :param event:
+             Event representing file/directory modification.
+         """
+        print(f"on_modified: {event.src_path}")
+        self.event_queue.put(event)
 
 
-def on_modified(event):
-    """Called when a file or directory is modified.
-     :param event:
-         Event representing file/directory modification.
-     """
-    print(f"on_modified: {event.src_path}")
+    def on_moved(self, event):
+        """Called when a file or a directory is moved or renamed.
+        :param event:
+            Event representing file/directory movement.
+        """
+        print(f"on_moved: from {event.src_path} to {event.dest_path}")
+        self.event_queue.put(event)
 
 
-def on_moved(event):
-    """Called when a file or a directory is moved or renamed.
-    :param event:
-        Event representing file/directory movement.
-    """
-    print(f"on_moved: from {event.src_path} to {event.dest_path}")
+    def on_closed(self, event):
+        """Called when a file opened for writing is closed.
+        :param event:
+            Event representing file closing.
+        """
+        print(f"on_closed: {event.src_path}")
+        self.event_queue.put(event)
 
-
-def on_closed(event):
-    """Called when a file opened for writing is closed.
-    :param event:
-        Event representing file closing.
-    """
-    print(f"on_closed: {event.src_path}")
-
-
-# def on_any_event(event):
-#     print(f"on_any_event:{event.src_path}")
+    def set_socket(self, des_socket):
+        self.s = des_socket
 
 
 def get_random_string(length):
