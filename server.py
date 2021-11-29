@@ -4,18 +4,35 @@ import sys
 from utils import *
 
 
-def no_recognied_protocol(s, recognizer, recognizer_size, clients_dic):
+def add_index_to_dict(s, clients_dic, client_recognizer):
+    """
+    The function
+    :param s:
+    :param clients_dic:
+    :param client_recognizer:
+    :return:
+    """
+    # find the number of clients that already exists with the same recognizer.
+    number_of_key = len(clients_dic[client_recognizer].keys())
+    # create new client index, inset to the dict with new queue.
+    client_index = number_of_key + 1
+    clients_dic[client_recognizer][client_index] = EventQueue()
+    # send the index to the client.
+    s.send(str(client_index).encode(FORMAT))
+
+
+def no_recognized_protocol(s, recognizer, recognizer_size, clients_dic):
     # make random recognizer for client
     client_recognizer = get_random_string(recognizer_size)
-
     # sending the client recognizer.
     s.send(client_recognizer.encode(FORMAT))
-    s.recv(SIZE)
+    s.recv(SIZE).decode(FORMAT)
     # create a folder in the  server folder path with the name of the recognizer.
     os.makedirs(client_recognizer)
     tracking_path = os.path.join(os.getcwd(), client_recognizer)
-    # save in client_dic
-    clients_dic[client_recognizer] = tracking_path
+    # save in client_dict
+    clients_dic[client_recognizer] = {}
+    add_index_to_dict(s, clients_dic, client_recognizer)
     receive_all(s, tracking_path)
 
 
@@ -23,7 +40,7 @@ def recognized_protocol(socket, recognizer, client_dic):
     path = client_dic.get(recognizer)
     main_dir = os.listdir(path)[0]
     in_path = os.path.join(path, main_dir)
-    send_all(socket, in_path,path)
+    send_all(socket, in_path, path)
 
 
 def main(server_port, recognizer_size):
@@ -49,17 +66,17 @@ def main(server_port, recognizer_size):
         # Accept a new client and read his recognizer string.
         client_socket, client_address = server_socket.accept()
         client_recognizer = client_socket.recv(recognizer_size).decode(FORMAT)
+        client_socket.send(b'recognizer received')
+        client_index = client_socket.recv(SIZE)
         if client_recognizer == CLIENT_NOT_RECOGNIZED:
-            no_recognied_protocol(client_socket, client_recognizer, recognizer_size, clients_dic)
+            no_recognized_protocol(client_socket, client_recognizer, recognizer_size, clients_dic)
         else:
-            if client_recognizer == "on_deleted":
-                client_recognizer = client_socket.recv(recognizer_size).decode(FORMAT)
-                client_socket.send(b'client_recognizer received')
-                dir_to_delete = client_socket.recv(SIZE)
-                client_socket.send(b'on_deleted received')
-                os.remove(os.path.join(clients_dic[client_recognizer], dir_to_delete))
-            else:
+            if client_index == CLIENT_HAS_NO_INDEX:
+                add_index_to_dict(client_socket, clients_dic, client_recognizer)
                 recognized_protocol(client_socket, client_recognizer, clients_dic)
+            else:
+                pass
+                # Check for changes.
 
         client_socket.close()
 

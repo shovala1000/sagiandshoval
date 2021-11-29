@@ -13,6 +13,7 @@ import socket
 FORMAT = 'utf-8'
 SIZE = 1024
 CLIENT_NOT_RECOGNIZED = 'no recognize'
+CLIENT_HAS_NO_INDEX = '-1'
 BYTES_FOR_INDEX = 4
 END_DIRS = 'End dirs'
 END_FILES = 'End files'
