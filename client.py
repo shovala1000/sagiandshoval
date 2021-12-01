@@ -56,7 +56,7 @@ def main(server_ip, server_port, dir_folder, recognizer, time, client_index):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((server_ip, int(server_port)))
     s.send(recognizer.encode(FORMAT))
-    s.recv(SIZE)
+    s.recv(25)
     s.send(client_index.encode(FORMAT))
 
     # checking if the recognizer is exists.
@@ -88,11 +88,11 @@ if __name__ == "__main__":
     # elif len(sys.argv) == 6:
     #     RECOGNIZE = sys.argv[5]
     # RECOGNIZE = CLIENT_NOT_RECOGNIZED
-    RECOGNIZE = "A6ltFYqJF9Vl7TUKbDNUFZ1I7pY7LITznrlFTckMrx9qh4RJViMMJC21enUD9chZm2sZBC64OWa5xn4oX0ODrzgTE6TiVD3o2EcuZ3Z5g18A6oXaUq65ZaArfrOStbvb "
+    RECOGNIZE = "ZAsvTfQwoZUFZ8tvtYabtrOHKSr1EN1puvt0AjkzXRP8D6XCasiYmXw8k3mi67LTY8fQH41E7n6cGKyNZffB9cJCKrQDGPyefwGAaSUV3HLjMHG6YZuMZcn5zaAmvW76"
     SERVER_IP = "127.0.0.1"  # sys.argv[1]
     SERVER_PORT = "12346"  # sys.argv[2]
-    # DIR_FOLDER = "/home/sagi/PycharmProjects/sagiandshoval/test"  # sys.argv[3]
-    DIR_FOLDER = "/home/sagi/PycharmProjects/IntroNetEx2-Client2"  # sys.argv[3]
+    DIR_FOLDER = "/home/sagi/PycharmProjects/sagiandshoval"  # sys.argv[3]
+    # DIR_FOLDER = "/home/sagi/PycharmProjects/IntroNetEx2-Client2"  # sys.argv[3]
     TIME = "5"  # sys.argv[4]
     CLIENT_INDEX = CLIENT_HAS_NO_INDEX
     main(SERVER_IP, SERVER_PORT, DIR_FOLDER, RECOGNIZE, TIME, CLIENT_INDEX)

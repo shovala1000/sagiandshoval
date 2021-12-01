@@ -90,7 +90,8 @@ def main(server_port, recognizer_size):
         client_socket, client_address = server_socket.accept()
         client_recognizer = client_socket.recv(recognizer_size).decode(FORMAT)
         client_socket.send(b'recognizer received')
-        client_index = client_socket.recv(SIZE).decode(FORMAT)
+        client_index = client_socket.recv(recognizer_size).decode(FORMAT)
+
         if client_recognizer == CLIENT_NOT_RECOGNIZED:
             no_recognized_protocol(client_socket, client_recognizer, recognizer_size, clients_dic, clients_address_dic)
         else:
