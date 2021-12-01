@@ -1,14 +1,8 @@
 import os
 import string
 import random
-import time
-from watchdog.observers.api import ObservedWatch
+import watchdog
 from watchdog.events import PatternMatchingEventHandler, FileSystemEventHandler
-from watchdog.observers.api import EventEmitter
-from watchdog.observers.api import EventQueue
-from watchdog.observers import Observer
-
-import socket
 
 FORMAT = 'utf-8'
 SIZE = 1024
@@ -23,8 +17,8 @@ END_SEND_ALL = b'end_send_all'
 
 class MonitorFolder(FileSystemEventHandler):
 
-    def __init__(self, des_socket, recognizer, event_queue):
-        self.s = des_socket
+    def __init__(self, recognizer, event_queue):
+        # self.s = des_socket
         self.r = recognizer
         self.event_queue = event_queue
 
@@ -33,7 +27,6 @@ class MonitorFolder(FileSystemEventHandler):
 
     def on_created(self, event):
         """Called when a file or directory is created.
-        :param **kwargs:
         :param event:
             Event representing file/directory creation.
         """
@@ -48,13 +41,13 @@ class MonitorFolder(FileSystemEventHandler):
         print(f"on_deleted: {event.src_path}")
         self.event_queue.put(event)
 
-    def on_modified(self, event):
-        """Called when a file or directory is modified.
-         :param event:
-             Event representing file/directory modification.
-         """
-        print(f"on_modified: {event.src_path}")
-        self.event_queue.put(event)
+    # def on_modified(self, event):
+    #     """Called when a file or directory is modified.
+    #      :param event:
+    #          Event representing file/directory modification.
+    #      """
+    #     print(f"on_modified: {event.src_path}")
+    #     self.event_queue.put(event)
 
     def on_moved(self, event):
         """Called when a file or a directory is moved or renamed.
@@ -72,8 +65,8 @@ class MonitorFolder(FileSystemEventHandler):
         print(f"on_closed: {event.src_path}")
         self.event_queue.put(event)
 
-    def set_socket(self, des_socket):
-        self.s = des_socket
+    # def set_socket(self, des_socket):
+    #     self.s = des_socket
 
 
 def get_random_string(length):
@@ -85,7 +78,7 @@ def get_random_string(length):
         random.choice(string.ascii_lowercase + string.digits + string.ascii_uppercase) for i in range(length))
 
 
-def send_file_data(s, file_name, abs_file_path, start):
+def send_file_data(s, file_name, abs_file_path, start=None):
     """
     sent the file's data.
     :param s: for send.
@@ -95,6 +88,7 @@ def send_file_data(s, file_name, abs_file_path, start):
     """
     # send the relative file's path.
     s.send(os.path.join(os.path.relpath(abs_file_path, start), file_name).encode(FORMAT))
+    print("send file name = " + os.path.join(os.path.relpath(abs_file_path, start), file_name))
     s.recv(SIZE).decode(FORMAT)
     # open the file and read data
     new_file = open(os.path.join(abs_file_path, file_name), 'rb')
@@ -144,7 +138,7 @@ def receive_dirs_from_path(s, des_folder_path):
     :param s:  received from
     :param des_folder_path: destination path for given directories
     """
-    # received dir's name
+    # received name of dir.
     dir_name = bytes(s.recv(SIZE)).decode(FORMAT)
     s.send(b'dir_name received')
     # loop runs until received all the dirs.
@@ -163,11 +157,13 @@ def receive_files_from_path(s, des_folder_path):
     """
     # received file's name
     file_name = bytes(s.recv(SIZE)).decode(FORMAT)
+    print("file_name = " + file_name)
     s.send(b'file_name received')
     # loop runs until received all the files.
     while not file_name == END_FILES:
         # creates the file
         file_path = os.path.join(des_folder_path, file_name)
+        print("file_path = " + file_path)
         with open(file_path, 'wb') as f:
             file_data = s.recv(SIZE)
             s.send(b'file_data received')
@@ -190,17 +186,126 @@ def receive_all(s, des_folder_path):
     :param des_folder_path: destination path for the received files and directories.
     """
     # receive the main dir
-    dir = bytes(s.recv(SIZE)).decode(FORMAT)
+    current_dir = bytes(s.recv(SIZE)).decode(FORMAT)
     s.send(b' dir received')
-    dir_path = os.path.join(des_folder_path, os.path.basename(dir))
+    dir_path = os.path.join(des_folder_path, os.path.basename(current_dir))
     # creates the dir of the dir_path
     os.makedirs(dir_path)
     # loop runs until it got all the directories and files of the main dir.
-    while not dir == END_SEND_ALL.decode(FORMAT):
+    while not current_dir == END_SEND_ALL.decode(FORMAT):
         # receive all the folders in dir
         receive_dirs_from_path(s, des_folder_path)
         # receive all the files in dir
         receive_files_from_path(s, des_folder_path)
         # get the next dir.
-        dir = bytes(s.recv(SIZE)).decode(FORMAT)
+        current_dir = bytes(s.recv(SIZE)).decode(FORMAT)
         s.send(b' dir received')
+
+
+def send_changes(event_queue, s):
+    """
+    send from socket all the events from event_queue
+    :param event_queue: is EventQueue
+    :param s: is a socket to send from
+    """
+    while not event_queue.empty():
+        current_event = event_queue.get()
+        # get type, path and if is directory information.
+        if watchdog.events.EVENT_TYPE_MOVED == current_event.event_type:
+            event_type, src_path, dest_path, is_directory = current_event.key
+        else:
+            dest_path = ''
+            event_type, src_path, is_directory = current_event.key
+        # send event type
+        s.send(event_type.encode(FORMAT))
+        s.recv(SIZE)
+        # send event src_path
+        s.send(src_path.encode(FORMAT))
+        s.recv(SIZE)
+        if watchdog.events.EVENT_TYPE_MOVED == event_type:
+            # send event dest_path
+            s.send(dest_path.encode(FORMAT))
+            s.recv(SIZE)
+        # send if is directory
+        s.send(str(is_directory).encode(FORMAT))
+        s.recv(SIZE)
+        if watchdog.events.EVENT_TYPE_MOVED == event_type:
+            if not is_directory:
+                print(" os.path.abspath(os.path.join(src_path, os.pardir)) = " + os.path.abspath(
+                    os.path.join(src_path, os.pardir)))
+                print("parent = " + os.pardir)
+                send_file_data(s, os.path.basename(dest_path), os.path.abspath(os.path.join(dest_path, os.pardir)))
+                # finished with sending all files.
+                s.send(END_FILES.encode(FORMAT))
+                s.recv(SIZE)
+        if watchdog.events.EVENT_TYPE_CREATED == event_type:
+            if not is_directory:
+                print(" os.path.abspath(os.path.join(src_path, os.pardir)) = " + os.path.abspath(
+                    os.path.join(src_path, os.pardir)))
+                print("parent = " + os.pardir)
+                send_file_data(s, os.path.basename(src_path), os.path.abspath(os.path.join(src_path, os.pardir)))
+                # finished with sending all files.
+                s.send(END_FILES.encode(FORMAT))
+                s.recv(SIZE)
+    s.send(b'End')
+    return event_queue
+
+
+def receive_changes(s):
+    # receive event type
+    event_type = s.recv(SIZE).decode(FORMAT)
+    s.send(b'type received')
+    while not "End" == event_type:
+        # receive event src_path
+        src_path = s.recv(SIZE).decode(FORMAT)
+        s.send(b'src_path received')
+        dest_path = ""
+        # receive dest_type
+        if watchdog.events.EVENT_TYPE_MOVED == event_type:
+            dest_path = s.recv(SIZE).decode(FORMAT)
+            s.send(b'dest_path received')
+        # receive if is directory
+        is_directory = s.recv(SIZE).decode(FORMAT)
+        s.send(b'is_directory received')
+        # receive event according to the type protocol
+        if watchdog.events.EVENT_TYPE_CREATED == event_type:
+            on_created_protocol(is_directory, src_path, s)
+        elif watchdog.events.EVENT_TYPE_DELETED == event_type:
+            on_deleted_protocol(is_directory, src_path)
+        elif watchdog.events.EVENT_TYPE_MOVED == event_type:
+            on_moved_protocol(is_directory, src_path, dest_path, s)
+        elif watchdog.events.EVENT_TYPE_CLOSED == event_type:
+            on_closed_protocol()
+        # receive event type
+        event_type = s.recv(SIZE).decode(FORMAT)
+        s.send(b'type received')
+
+
+def on_created_protocol(is_directory, src_path, s):
+    current_path = "/home/shoval/PycharmProjects/sagiandshoval/test2"
+    path = os.path.join(current_path, os.path.relpath(src_path))
+    print("path = " + path)
+    if 'True' == is_directory:
+        os.makedirs(path)
+    else:
+        receive_files_from_path(s, current_path)
+        # if not '~' == os.path.basename(path)[-1]:
+        #     print("rec data")
+        #     receive_file_data(s, path)
+
+
+def on_deleted_protocol(is_directory, src_path):
+    path = os.path.join("/home/shoval/PycharmProjects/sagiandshoval/test2", os.path.relpath(src_path))
+    if 'True' == is_directory:
+        os.rmdir(path)
+    else:
+        os.remove(path)
+
+
+def on_moved_protocol(is_directory, src_path, dest_path, s):
+    on_created_protocol(is_directory, dest_path, s)
+    on_deleted_protocol(is_directory, src_path)
+
+
+def on_closed_protocol():
+    pass

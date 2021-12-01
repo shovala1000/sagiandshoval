@@ -1,3 +1,5 @@
+import socket
+
 from utils import *
 
 
@@ -74,12 +76,6 @@ def main(server_ip, server_port, dir_folder, recognizer, time, client_index):
             pass
             # check for changes
     s.close()
-    # i = 0
-    # while True:
-    #     print(str(i))
-    #     i = i + 1
-    #     sleep(int(time))
-    #     sync_protocol(dir_folder, server_ip, server_port, recognizer)
 
 
 if __name__ == "__main__":
@@ -87,11 +83,11 @@ if __name__ == "__main__":
     #     exit()
     # elif len(sys.argv) == 6:
     #     RECOGNIZE = sys.argv[5]
-    # RECOGNIZE = CLIENT_NOT_RECOGNIZED
-    RECOGNIZE = "ZAsvTfQwoZUFZ8tvtYabtrOHKSr1EN1puvt0AjkzXRP8D6XCasiYmXw8k3mi67LTY8fQH41E7n6cGKyNZffB9cJCKrQDGPyefwGAaSUV3HLjMHG6YZuMZcn5zaAmvW76"
+    RECOGNIZE = CLIENT_NOT_RECOGNIZED
+    # RECOGNIZE = "1asvRx81Xs6UGDfUO2GgN8hsXtjbASyq78ubHps3BBNUzFhNumVVFDbUv5lwSr3SCdcli1DOdCKtbIXGHnrLIAbmJNInBoCyu4ZN5JtMIcGn2ktwCrEfJXF9wcgIYuRZ"
     SERVER_IP = "127.0.0.1"  # sys.argv[1]
-    SERVER_PORT = "12346"  # sys.argv[2]
-    DIR_FOLDER = "/home/sagi/PycharmProjects/sagiandshoval"  # sys.argv[3]
+    SERVER_PORT = "12347"  # sys.argv[2]
+    DIR_FOLDER = "/home/shoval/PycharmProjects/sagiandshoval"  # sys.argv[3]
     # DIR_FOLDER = "/home/sagi/PycharmProjects/IntroNetEx2-Client2"  # sys.argv[3]
     TIME = "5"  # sys.argv[4]
     CLIENT_INDEX = CLIENT_HAS_NO_INDEX

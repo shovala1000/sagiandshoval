@@ -1,3 +1,7 @@
+import socket
+
+from watchdog.observers.api import EventQueue
+
 from utils import *
 
 
@@ -102,13 +106,13 @@ def main(server_port, recognizer_size):
             else:
                 pass
                 # Check for changes.
-
+        print(str(clients_dic))
         client_socket.close()
 
 
 if __name__ == "__main__":
     # if len(sys.argv) != 2:
     #     exit()
-    SERVER_PORT = "12346"  # sys.argv[1]
+    SERVER_PORT = "12347"  # sys.argv[1]
     RECOGNIZER_SIZE = 128
     main(SERVER_PORT, RECOGNIZER_SIZE)
