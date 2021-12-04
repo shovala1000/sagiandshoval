@@ -2,7 +2,9 @@ import os
 import string
 import random
 import watchdog
-from watchdog.events import PatternMatchingEventHandler, FileSystemEventHandler
+from watchdog.events import PatternMatchingEventHandler, FileSystemEventHandler, FileSystemEvent, FileCreatedEvent, \
+    FileDeletedEvent, DirDeletedEvent, DirCreatedEvent
+from watchdog.observers.api import EventQueue
 
 FORMAT = 'utf-8'
 SIZE = 1024
@@ -40,14 +42,6 @@ class MonitorFolder(FileSystemEventHandler):
         print(f"on_deleted: {event.src_path}")
         self.event_queue.put(event)
 
-    def on_modified(self, event):
-        """Called when a file or directory is modified.
-         :param event:
-             Event representing file/directory modification.
-         """
-        print(f"on_modified: {event.src_path}")
-        # self.event_queue.put(event)
-
     def on_moved(self, event):
         """Called when a file or a directory is moved or renamed.
         :param event:
@@ -63,9 +57,6 @@ class MonitorFolder(FileSystemEventHandler):
         """
         print(f"on_closed: {event.src_path}")
         self.event_queue.put(event)
-
-    # def set_socket(self, des_socket):
-    #     self.s = des_socket
 
 
 def get_random_string(length):
@@ -91,6 +82,8 @@ def send_file_data(s, file_name, abs_file_path, start=None):
     # open the file and read data
     new_file = open(os.path.join(abs_file_path, file_name), 'rb')
     data = new_file.read(SIZE)
+    # send all file's data.
+    # send all file's data.
     # send all file's data.
     while data:
         s.send(data)
@@ -200,13 +193,13 @@ def receive_all(s, des_folder_path):
 
 def send_changes(event_queue, s):
     """
-    send from socket all the events from event_queue
+    Sending all the changes from the event queue through the socket.
     :param event_queue: is EventQueue
     :param s: is a socket to send from
     """
-    print("in send_changes")
-    print("event_queue: "+str(event_queue.queue))
+    event_queue = handle_queue(event_queue)
     while not event_queue.empty():
+        print("event_queue: " + str(event_queue.queue))
         current_event = event_queue.get()
         # get type, path and if is directory information.
         if watchdog.events.EVENT_TYPE_MOVED == current_event.event_type:
@@ -214,9 +207,10 @@ def send_changes(event_queue, s):
         else:
             dest_path = ''
             event_type, src_path, is_directory = current_event.key
+        print("src_path - " + src_path)
         # send event type
         s.send(event_type.encode(FORMAT))
-        print("send event type: "+event_type)
+        print("send event type: " + event_type)
         s.recv(SIZE)
         # send event src_path
         s.send(src_path.encode(FORMAT))
@@ -236,16 +230,38 @@ def send_changes(event_queue, s):
                 s.recv(SIZE)
         if watchdog.events.EVENT_TYPE_CREATED == event_type:
             if not is_directory:
+                print({event_queue.get})
+                if os.path.exists(src_path):
+                    print("this addr exits: " + str(src_path))
+                    send_file_data(s, os.path.basename(src_path), os.path.abspath(os.path.join(src_path, os.pardir)))
+                # finished with sending all files.
+                s.send(END_FILES.encode(FORMAT))
+                s.recv(SIZE)
+        if watchdog.events.EVENT_TYPE_CLOSED == event_type:
+            if os.path.exists(src_path):
+                print("this addr exits: " + str(src_path))
                 send_file_data(s, os.path.basename(src_path), os.path.abspath(os.path.join(src_path, os.pardir)))
                 # finished with sending all files.
                 s.send(END_FILES.encode(FORMAT))
                 s.recv(SIZE)
+        if watchdog.events.EVENT_TYPE_DELETED == event_type:
+            if os.path.exists(src_path):
+                print("this addr exits: " + str(src_path))
+                if is_directory:
+                    if 0 == len(os.listdir(src_path)):
+                        os.rmdir(src_path)
+                    else:
+                        delete_dir_recursively(src_path)
     s.send(b'End')
     s.recv(SIZE)
 
 
 def receive_changes(s):
-    print("in receive")
+    """
+    Receive all the changes from the event queue through the socket.
+    :param s: is the socket
+    :return: no returning value.
+    """
     # receive event type
     event_type = s.recv(SIZE).decode(FORMAT)
     s.send(b'type received')
@@ -262,7 +278,7 @@ def receive_changes(s):
         is_directory = s.recv(SIZE).decode(FORMAT)
         s.send(b'is_directory received')
         # receive event according to the type protocol
-        print("go to protocol: "+event_type)
+        print("go to protocol: " + event_type)
         if watchdog.events.EVENT_TYPE_CREATED == event_type:
             on_created_protocol(is_directory, src_path, s)
         elif watchdog.events.EVENT_TYPE_DELETED == event_type:
@@ -270,35 +286,150 @@ def receive_changes(s):
         elif watchdog.events.EVENT_TYPE_MOVED == event_type:
             on_moved_protocol(is_directory, src_path, dest_path, s)
         elif watchdog.events.EVENT_TYPE_CLOSED == event_type:
-            on_closed_protocol()
+            on_closed_protocol(is_directory, src_path, s)
+        # elif watchdog.events.EVENT_TYPE_MODIFIED == event_type:
+        #     on_modified_protocol(is_directory, src_path, s)
         # receive event type
         event_type = s.recv(SIZE).decode(FORMAT)
         s.send(b'type received')
 
 
 def on_created_protocol(is_directory, src_path, s):
-    print("in created")
-    current_path = "/home/shoval/PycharmProjects/sagiandshoval/test2"
+    """
+     This protocol determine what the receiver should do if he has a create event.
+    :param is_directory: True if folder, False otherwise.
+    :param src_path: is the source path.
+    :param s: is the socket
+    :return: no returning value.
+    """
+    current_path = "/home/sagi/PycharmProjects/sagiandshoval/test2"
     path = os.path.join(current_path, os.path.relpath(src_path))
-    if 'True' == is_directory:
-        os.makedirs(path)
+    if not os.path.exists(path):
+        if 'True' == is_directory:
+            os.makedirs(path)
+        else:
+            receive_files_from_path(s, current_path)
     else:
-        print("need to create a file")
-        receive_files_from_path(s, current_path)
+        on_deleted_protocol(is_directory, src_path)
+        on_created_protocol(is_directory, src_path, s)
+        if 'True' == is_directory:
+            os.rmdir(path)
 
 
 def on_deleted_protocol(is_directory, src_path):
-    path = os.path.join("/home/shoval/PycharmProjects/sagiandshoval/test2", os.path.relpath(src_path))
-    if 'True' == is_directory:
-        os.rmdir(path)
-    else:
-        os.remove(path)
+    """
+    This protocol determine what the receiver should do if he has a delete event.
+    :param is_directory: True if folder, False otherwise.
+    :param src_path: is the source path.
+    :return: no return value.
+    """
+    path = os.path.join("/home/sagi/PycharmProjects/sagiandshoval/test2", os.path.relpath(src_path))
+    if os.path.exists(path):
+        if 'True' == is_directory:
+            if 0 == len(os.listdir(path)):
+                os.rmdir(path)
+            else:
+                delete_dir_recursively(path)
+                os.rmdir(path)
+        elif os.path.exists(path):
+            os.remove(path)
 
 
-def on_moved_protocol(is_directory, src_path, dest_path, s):
-    on_created_protocol(is_directory, dest_path, s)
-    on_deleted_protocol(is_directory, src_path)
+def on_moved_protocol(is_directory, src_path, des_path, s):
+    """
+    This protocol determine what the receiver should do if he has a move event.
+    :param is_directory: True if folder, False otherwise.
+    :param src_path: is the source path.
+    :param des_path: is the destination path.
+    :param s: is the socket.
+    :return: no returning value.
+    """
+    if os.path.exists(src_path):
+        on_created_protocol(is_directory, des_path, s)
+        on_deleted_protocol(is_directory, src_path)
+        if 'True' == is_directory:
+            os.rmdir(src_path)
 
 
-def on_closed_protocol():
-    print("in close")
+def on_closed_protocol(is_directory, src_path, s):
+    """
+    This protocol determine what the receiver should do if he has a close event.
+    :param is_directory: True if folder, False otherwise.
+    :param src_path: is the source path.
+    :param s: is the socket.
+    :return: no returning value.
+    """
+    current_path = "/home/sagi/PycharmProjects/sagiandshoval/test2"
+    if os.path.exists(src_path):
+        on_created_protocol(is_directory, src_path, s)
+
+
+def delete_dir_recursively(path):
+    """
+    The function will receive a folder and delete her recursively.
+    :param path: folder path
+    :return: no returning value.
+    """
+    for root, dirs, files in os.walk(path, topdown=False):
+        for name in files:
+            os.remove(os.path.join(root, name))
+        for name in dirs:
+            os.rmdir(os.path.join(root, name))
+
+
+def handle_queue(event_queue):
+    """
+    The function will remove unnecessary events from the queue.
+    The function will create a temporary queue and insert all the relevant events.
+    The function will be called before sending changes.
+    :param event_queue: is the current queue event.
+    :return: the new queue.
+    """
+    print("in event handler")
+    print("event_queue before: " + str(event_queue.queue))
+    # create the new queue.
+    new_event_queue = EventQueue()
+    while not event_queue.empty():
+        current_event = event_queue.get()
+        print("current event: " + str(current_event))
+        # if the current event in created
+        if current_event.event_type == watchdog.events.EVENT_TYPE_CREATED:
+            event_type, src_path, is_directory = current_event.key
+            if os.path.exists(src_path):
+                new_event_queue.put(current_event)
+        # if the current event in closed. This event will take place when a file is closed.
+        if current_event.event_type == watchdog.events.EVENT_TYPE_CLOSED:
+            event_type, src_path, is_directory = current_event.key
+            # checking if the path is exists.
+            if os.path.exists(src_path):
+                new_event_queue.put(current_event)
+            # if the path does not exists, checking that this path is for file and insert new create event.
+            else:
+                if not is_directory:
+                    new_event_queue.put(FileCreatedEvent(src_path))
+
+        # if the current event in move
+        if current_event.event_type == watchdog.events.EVENT_TYPE_MOVED:
+            event_type, src_path, dest_path, is_directory = current_event.key
+            # if the source path does not exists create the file in destination path.
+            if not os.path.exists(src_path):
+                # checking if file or dir.
+                if is_directory:
+                    # delete the dir and create it again.
+                    new_event_queue.put(DirCreatedEvent(dest_path))
+                    new_event_queue.put(DirDeletedEvent(src_path))
+                else:
+                    # delete the file and create it again.
+                    new_event_queue.put(FileDeletedEvent(src_path))
+                    new_event_queue.put(FileCreatedEvent(dest_path))
+            else:
+                new_event_queue.put(current_event)
+
+        # if the current event in deleted
+        if current_event.event_type == watchdog.events.EVENT_TYPE_DELETED:
+            new_event_queue.put(current_event)
+
+    # return the new queue.
+    print("new_event_queue: " + str(new_event_queue.queue))
+    print("event_queue after: " + str(event_queue.queue))
+    return new_event_queue

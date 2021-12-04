@@ -1,8 +1,9 @@
 import socket
 
+
 from utils import *
 
-SERVER_PORT = "12349"  # sys.argv[1]
+SERVER_PORT = "12345"  # sys.argv[1]
 RECOGNIZER_SIZE = 128
 
 # create the TCP socket and bind with the receiving port.
@@ -20,3 +21,5 @@ while True:
     client_socket, client_address = server_socket.accept()
     receive_changes(client_socket)
     client_socket.close()
+
+
