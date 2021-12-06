@@ -96,7 +96,7 @@ def main(server_ip, server_port, dir_folder, recognizer, time_waiting, client_in
         # send client changes
         send_changes(my_handler.get_queue(), s)
         # receive changes from server.
-        # receive_changes(s, dir_folder)
+        receive_changes(s, dir_folder)
 
 
 if __name__ == "__main__":
@@ -108,13 +108,9 @@ if __name__ == "__main__":
     # RECOGNIZE = "1asvRx81Xs6UGDfUO2GgN8hsXtjbASyq78ubHps3BBNUzFhNumVVFDbUv5lwSr3SCdcli1DOdCKtbIXGHnrLIAbmJNInBoCyu4ZN5JtMIcGn2ktwCrEfJXF9wcgIYuRZ"
     SERVER_IP = "127.0.0.1"  # sys.argv[1]
     SERVER_PORT = "12347"  # sys.argv[2]
-    DIR_FOLDER = "/home/shoval/PycharmProjects/sagiandshoval/test"  # sys.argv[3]
+    DIR_FOLDER = "/home/sagi/PycharmProjects/sagiandshoval/test"  # sys.argv[3]
     # DIR_FOLDER = "/home/sagi/PycharmProjects/IntroNetEx2-Client2"  # sys.argv[3]
     TIME = "5"  # sys.argv[4]
     CLIENT_INDEX = CLIENT_HAS_NO_INDEX
     main(SERVER_IP, SERVER_PORT, DIR_FOLDER, RECOGNIZE, TIME, CLIENT_INDEX)
 
-
-
-
-sagi
