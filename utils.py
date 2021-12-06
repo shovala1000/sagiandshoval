@@ -435,3 +435,6 @@ def handle_queue(event_queue):
     print("new_event_queue: " + str(new_event_queue.queue))
     print("event_queue after: " + str(event_queue.queue))
     return new_event_queue
+
+
+#shoval

@@ -114,3 +114,5 @@ if __name__ == "__main__":
     CLIENT_INDEX = CLIENT_HAS_NO_INDEX
     main(SERVER_IP, SERVER_PORT, DIR_FOLDER, RECOGNIZE, TIME, CLIENT_INDEX)
 
+    #shoval
+
