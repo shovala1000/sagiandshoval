@@ -20,7 +20,7 @@ def add_index_to_dict(s, clients_dic, client_recognizer):
     number_of_key = len(clients_dic[client_recognizer].keys())
     # create new client index, inset to the dict with new queue.
     client_index = number_of_key + 1
-    clients_dic[client_recognizer][client_index] = EventQueue()
+    clients_dic[client_recognizer][client_index] = EventQueue().queue
     # send the index to the client.
     s.send(str(client_index).encode(FORMAT))
 
@@ -104,8 +104,17 @@ def main(server_port, recognizer_size):
                 client_socket.recv(SIZE).decode(FORMAT)
                 recognized_protocol(client_socket, client_recognizer, clients_address_dic)
             else:
-                pass
-                # Check for changes.
+                client_socket.send(b'start sync')
+                # receive client's changes.
+                # print("the path changing is: " + str(clients_address_dic[client_recognizer]))
+                # print("client-dic: " + str(clients_dic[client_recognizer]))
+                # print("client_index: "+client_index)
+                # print("queue: "+str(clients_dic[client_recognizer][str(client_index)]))
+                receive_changes(client_socket, clients_address_dic[client_recognizer])
+                #######
+
+                # send changes to client
+                # send_changes(clients_dic[client_recognizer][client_index], client_socket)
         print(str(clients_dic))
         client_socket.close()
 

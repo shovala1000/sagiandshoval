@@ -1,5 +1,7 @@
 import socket
+import time
 
+from watchdog.observers import Observer
 from utils import *
 
 
@@ -28,7 +30,7 @@ def no_recognized_protocol(s, recognizer, source_folder_path, client_index):
     s.send(b'recognizer received')
     client_index = s.recv(SIZE).decode(FORMAT)
     send_all(s, source_folder_path, os.getcwd())
-    return recognizer
+    return recognizer, client_index
 
 
 def recognized_protocol(s, recognizer, dir_folder):
@@ -43,7 +45,17 @@ def recognized_protocol(s, recognizer, dir_folder):
     receive_all(s, dir_folder)
 
 
-def main(server_ip, server_port, dir_folder, recognizer, time, client_index):
+def init_socket(server_ip, server_port, recognizer, client_index):
+    # recognized and connected to the server
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((server_ip, int(server_port)))
+    s.send(recognizer.encode(FORMAT))
+    s.recv(25)
+    s.send(client_index.encode(FORMAT))
+    return s
+
+
+def main(server_ip, server_port, dir_folder, recognizer, time_waiting, client_index):
     """
     main function
     :param server_ip: is the sever ip.
@@ -54,16 +66,18 @@ def main(server_ip, server_port, dir_folder, recognizer, time, client_index):
     :param client_index: is the client index in the clients_dic dictionary.
     :return:
     """
-    # recognized and connected to the server
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((server_ip, int(server_port)))
-    s.send(recognizer.encode(FORMAT))
-    s.recv(25)
-    s.send(client_index.encode(FORMAT))
+    # initalize socket
+    s = init_socket(server_ip, server_port, recognizer, client_index)
+    # initialize handler and observer
+    my_event_queue = EventQueue()
+    my_handler = MonitorFolder(RECOGNIZE, my_event_queue)
+    my_observer = Observer()
+    my_observer.schedule(my_handler, dir_folder, True)
+    my_observer.start()
 
     # checking if the recognizer is exists.
     if recognizer == CLIENT_NOT_RECOGNIZED:
-        recognizer = no_recognized_protocol(s, recognizer, dir_folder, client_index)
+        recognizer, client_index = no_recognized_protocol(s, recognizer, dir_folder, client_index)
 
     else:
         # checking the case that the recognizer is exists and the index does not
@@ -72,10 +86,17 @@ def main(server_ip, server_port, dir_folder, recognizer, time, client_index):
             s.send(b'index received')
             recognized_protocol(s, recognizer, dir_folder)
         # Check the case where the recognizer and index exist
-        else:
-            pass
-            # check for changes
-    s.close()
+
+    # check for changes
+    while True:
+        s.close()
+        time.sleep(int(time_waiting))
+        s = init_socket(server_ip, server_port, recognizer, client_index)
+        s.recv(SIZE)
+        # send client changes
+        send_changes(my_handler.get_queue(), s)
+        # receive changes from server.
+        receive_changes(s, dir_folder)
 
 
 if __name__ == "__main__":
@@ -87,7 +108,7 @@ if __name__ == "__main__":
     # RECOGNIZE = "1asvRx81Xs6UGDfUO2GgN8hsXtjbASyq78ubHps3BBNUzFhNumVVFDbUv5lwSr3SCdcli1DOdCKtbIXGHnrLIAbmJNInBoCyu4ZN5JtMIcGn2ktwCrEfJXF9wcgIYuRZ"
     SERVER_IP = "127.0.0.1"  # sys.argv[1]
     SERVER_PORT = "12347"  # sys.argv[2]
-    DIR_FOLDER = "/home/shoval/PycharmProjects/sagiandshoval"  # sys.argv[3]
+    DIR_FOLDER = "/home/shoval/PycharmProjects/sagiandshoval/test"  # sys.argv[3]
     # DIR_FOLDER = "/home/sagi/PycharmProjects/IntroNetEx2-Client2"  # sys.argv[3]
     TIME = "5"  # sys.argv[4]
     CLIENT_INDEX = CLIENT_HAS_NO_INDEX

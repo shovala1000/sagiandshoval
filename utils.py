@@ -2,7 +2,7 @@ import os
 import string
 import random
 import watchdog
-from watchdog.events import PatternMatchingEventHandler, FileSystemEventHandler, FileSystemEvent, FileCreatedEvent, \
+from watchdog.events import PatternMatchingEventHandler, FileSystemEventHandler, FileCreatedEvent, \
     FileDeletedEvent, DirDeletedEvent, DirCreatedEvent
 from watchdog.observers.api import EventQueue
 
@@ -19,7 +19,6 @@ END_SEND_ALL = b'end_send_all'
 
 class MonitorFolder(FileSystemEventHandler):
     def __init__(self, recognizer, event_queue):
-        # self.s = des_socket
         self.r = recognizer
         self.event_queue = event_queue
 
@@ -256,7 +255,7 @@ def send_changes(event_queue, s):
     s.recv(SIZE)
 
 
-def receive_changes(s):
+def receive_changes(s, dir_path):
     """
     Receive all the changes from the event queue through the socket.
     :param s: is the socket
@@ -280,13 +279,13 @@ def receive_changes(s):
         # receive event according to the type protocol
         print("go to protocol: " + event_type)
         if watchdog.events.EVENT_TYPE_CREATED == event_type:
-            on_created_protocol(is_directory, src_path, s)
+            on_created_protocol(is_directory, src_path, s, dir_path)
         elif watchdog.events.EVENT_TYPE_DELETED == event_type:
-            on_deleted_protocol(is_directory, src_path)
+            on_deleted_protocol(is_directory, src_path, dir_path)
         elif watchdog.events.EVENT_TYPE_MOVED == event_type:
-            on_moved_protocol(is_directory, src_path, dest_path, s)
+            on_moved_protocol(is_directory, src_path, dest_path, s, dir_path)
         elif watchdog.events.EVENT_TYPE_CLOSED == event_type:
-            on_closed_protocol(is_directory, src_path, s)
+            on_closed_protocol(is_directory, src_path, s, dir_path)
         # elif watchdog.events.EVENT_TYPE_MODIFIED == event_type:
         #     on_modified_protocol(is_directory, src_path, s)
         # receive event type
@@ -294,15 +293,15 @@ def receive_changes(s):
         s.send(b'type received')
 
 
-def on_created_protocol(is_directory, src_path, s):
+def on_created_protocol(is_directory, src_path, s, current_path):
     """
      This protocol determine what the receiver should do if he has a create event.
     :param is_directory: True if folder, False otherwise.
     :param src_path: is the source path.
+    :param current_path: is the current path of a dir.
     :param s: is the socket
     :return: no returning value.
     """
-    current_path = "/home/sagi/PycharmProjects/sagiandshoval/test2"
     path = os.path.join(current_path, os.path.relpath(src_path))
     if not os.path.exists(path):
         if 'True' == is_directory:
@@ -310,20 +309,21 @@ def on_created_protocol(is_directory, src_path, s):
         else:
             receive_files_from_path(s, current_path)
     else:
-        on_deleted_protocol(is_directory, src_path)
-        on_created_protocol(is_directory, src_path, s)
+        on_deleted_protocol(is_directory, src_path, current_path)
+        on_created_protocol(is_directory, src_path, s, current_path)
         if 'True' == is_directory:
             os.rmdir(path)
 
 
-def on_deleted_protocol(is_directory, src_path):
+def on_deleted_protocol(is_directory, src_path, current_path):
     """
     This protocol determine what the receiver should do if he has a delete event.
     :param is_directory: True if folder, False otherwise.
     :param src_path: is the source path.
+    :param current_path: is the current path of a dir.
     :return: no return value.
     """
-    path = os.path.join("/home/sagi/PycharmProjects/sagiandshoval/test2", os.path.relpath(src_path))
+    path = os.path.join(current_path, os.path.relpath(src_path))
     if os.path.exists(path):
         if 'True' == is_directory:
             if 0 == len(os.listdir(path)):
@@ -335,33 +335,35 @@ def on_deleted_protocol(is_directory, src_path):
             os.remove(path)
 
 
-def on_moved_protocol(is_directory, src_path, des_path, s):
+def on_moved_protocol(is_directory, src_path, des_path, s, current_path):
     """
     This protocol determine what the receiver should do if he has a move event.
     :param is_directory: True if folder, False otherwise.
     :param src_path: is the source path.
     :param des_path: is the destination path.
     :param s: is the socket.
+    :param current_path: is the current path of a dir.
     :return: no returning value.
     """
     if os.path.exists(src_path):
-        on_created_protocol(is_directory, des_path, s)
-        on_deleted_protocol(is_directory, src_path)
+        on_created_protocol(is_directory, des_path, s, current_path)
+        on_deleted_protocol(is_directory, src_path, current_path)
         if 'True' == is_directory:
             os.rmdir(src_path)
 
 
-def on_closed_protocol(is_directory, src_path, s):
+def on_closed_protocol(is_directory, src_path, s, current_path):
     """
     This protocol determine what the receiver should do if he has a close event.
     :param is_directory: True if folder, False otherwise.
     :param src_path: is the source path.
     :param s: is the socket.
+    :param current_path: is the current path of a dir.
     :return: no returning value.
     """
-    current_path = "/home/sagi/PycharmProjects/sagiandshoval/test2"
+
     if os.path.exists(src_path):
-        on_created_protocol(is_directory, src_path, s)
+        on_created_protocol(is_directory, src_path, s, current_path)
 
 
 def delete_dir_recursively(path):

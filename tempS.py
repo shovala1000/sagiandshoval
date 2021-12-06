@@ -19,7 +19,7 @@ i = 0
 while True:
     # Accept a new client and read his recognizer string.
     client_socket, client_address = server_socket.accept()
-    receive_changes(client_socket)
+    receive_changes(client_socket,"/home/shoval/PycharmProjects/sagiandshoval/test2")
     client_socket.close()
 
 
