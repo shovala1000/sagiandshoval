@@ -96,7 +96,7 @@ def main(server_ip, server_port, dir_folder, recognizer, time_waiting, client_in
         # send client changes
         send_changes(my_handler.get_queue(), s)
         # receive changes from server.
-        receive_changes(s, dir_folder)
+        # receive_changes(s, dir_folder)
 
 
 if __name__ == "__main__":
@@ -113,3 +113,8 @@ if __name__ == "__main__":
     TIME = "5"  # sys.argv[4]
     CLIENT_INDEX = CLIENT_HAS_NO_INDEX
     main(SERVER_IP, SERVER_PORT, DIR_FOLDER, RECOGNIZE, TIME, CLIENT_INDEX)
+
+
+
+
+sagi
