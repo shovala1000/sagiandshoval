@@ -1,23 +1,8 @@
 import socket
-import sys
+
+from watchdog.observers.api import EventQueue
+
 from utils import *
-
-
-def insert_changes_to_other_clients(clients_dic, client_recognizer, client_index, save_event_queue):
-    temp_queue = save_event_queue
-    # print("insert_changes_to_other_clients")
-    # print("temp queue - before loop " + str(temp_queue.queue))
-    for index in clients_dic[client_recognizer]:
-        # print("save_event_queue: " + str(save_event_queue.queue))
-        temp_queue = save_event_queue
-        if index == int(client_index):
-            pass
-        else:
-            while not temp_queue.empty():
-                print(str(type(clients_dic[client_recognizer][int(index)])))
-                clients_dic[client_recognizer][int(index)].put(temp_queue.get())
-                print("after")
-    return clients_dic
 
 
 def add_index_to_dict(s, clients_dic, client_recognizer):
@@ -35,7 +20,7 @@ def add_index_to_dict(s, clients_dic, client_recognizer):
     number_of_key = len(clients_dic[client_recognizer].keys())
     # create new client index, inset to the dict with new queue.
     client_index = number_of_key + 1
-    clients_dic[client_recognizer][client_index] = EventQueue()
+    clients_dic[client_recognizer][client_index] = EventQueue().queue
     # send the index to the client.
     s.send(str(client_index).encode(FORMAT))
 
@@ -84,7 +69,7 @@ def recognized_protocol(s, recognizer, clients_address_dic):
     path = clients_address_dic.get(recognizer)
     main_dir = os.listdir(path)[0]
     in_path = os.path.join(path, main_dir)
-    send_all(s, in_path, path)
+    send_all(s, in_path)
 
 
 def main(server_port, recognizer_size):
@@ -121,19 +106,22 @@ def main(server_port, recognizer_size):
             else:
                 client_socket.send(b'start sync')
                 # receive client's changes.
-                save_event_queue = EventQueue()
-                # print("before changes -" + str(clients_address_dic[client_recognizer]))
-                save_event_queue = receive_changes(client_socket, clients_address_dic[client_recognizer])
-                clients_dic = insert_changes_to_other_clients(clients_dic, client_recognizer, client_index,
-                                                              save_event_queue)
+                # print("the path changing is: " + str(clients_address_dic[client_recognizer]))
+                # print("client-dic: " + str(clients_dic[client_recognizer]))
+                # print("client_index: "+client_index)
+                # print("queue: "+str(clients_dic[client_recognizer][str(client_index)]))
+                # print("client address: "+str(client_address[client_recognizer]))
+                receive_changes(client_socket, clients_address_dic[client_recognizer])
+                #######
+
                 # send changes to client
-                send_changes(clients_dic[client_recognizer][int(client_index)], client_socket)
+        print(str(clients_dic))
         client_socket.close()
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        exit()
-    SERVER_PORT = sys.argv[1]
+    # if len(sys.argv) != 2:
+    #     exit()
+    SERVER_PORT = "12347"  # sys.argv[1]
     RECOGNIZER_SIZE = 128
     main(SERVER_PORT, RECOGNIZER_SIZE)
