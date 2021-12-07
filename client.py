@@ -1,17 +1,9 @@
 import socket
 import time
+import sys
 
 from watchdog.observers import Observer
 from utils import *
-
-
-# def sync_protocol(path, server_ip, server_port, recognizer):
-#     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#     s.connect((server_ip, int(server_port)))
-#     event_handler = MonitorFolder(socket, recognizer)
-#     observer = Observer()
-#     observer.schedule(event_handler, path, recursive=True)
-#     observer.start()
 
 
 def no_recognized_protocol(s, recognizer, source_folder_path, client_index):
@@ -75,7 +67,7 @@ def main(server_ip, server_port, dir_folder, recognizer, time_waiting, client_in
     my_observer.schedule(my_handler, dir_folder, True)
     my_observer.start()
 
-    # checking if the recognizer is exists.
+    # checking if the recognier is exists.
     if recognizer == CLIENT_NOT_RECOGNIZED:
         recognizer, client_index = no_recognized_protocol(s, recognizer, dir_folder, client_index)
 
@@ -100,19 +92,14 @@ def main(server_ip, server_port, dir_folder, recognizer, time_waiting, client_in
 
 
 if __name__ == "__main__":
-    # if len(sys.argv) < 5 or len(sys.argv) > 6:
-    #     exit()
-    # elif len(sys.argv) == 6:
-    #     RECOGNIZE = sys.argv[5]
     RECOGNIZE = CLIENT_NOT_RECOGNIZED
-    # RECOGNIZE = "1asvRx81Xs6UGDfUO2GgN8hsXtjbASyq78ubHps3BBNUzFhNumVVFDbUv5lwSr3SCdcli1DOdCKtbIXGHnrLIAbmJNInBoCyu4ZN5JtMIcGn2ktwCrEfJXF9wcgIYuRZ"
-    SERVER_IP = "127.0.0.1"  # sys.argv[1]
-    SERVER_PORT = "12347"  # sys.argv[2]
-    DIR_FOLDER = "/home/sagi/PycharmProjects/sagiandshoval/test"  # sys.argv[3]
-    # DIR_FOLDER = "/home/sagi/PycharmProjects/IntroNetEx2-Client2"  # sys.argv[3]
-    TIME = "5"  # sys.argv[4]
+    if len(sys.argv) < 5 or len(sys.argv) > 6:
+        exit()
+    elif len(sys.argv) == 6:
+        RECOGNIZE = sys.argv[5]
+    SERVER_IP = sys.argv[1]
+    SERVER_PORT = sys.argv[2]
+    DIR_FOLDER = sys.argv[3]
+    TIME = sys.argv[4]
     CLIENT_INDEX = CLIENT_HAS_NO_INDEX
     main(SERVER_IP, SERVER_PORT, DIR_FOLDER, RECOGNIZE, TIME, CLIENT_INDEX)
-
-    #shoval
-

@@ -1,8 +1,23 @@
 import socket
-
-from watchdog.observers.api import EventQueue
-
+import sys
 from utils import *
+
+
+def insert_changes_to_other_clients(clients_dic, client_recognizer, client_index, save_event_queue):
+    temp_queue = save_event_queue
+    # print("insert_changes_to_other_clients")
+    # print("temp queue - before loop " + str(temp_queue.queue))
+    for index in clients_dic[client_recognizer]:
+        # print("save_event_queue: " + str(save_event_queue.queue))
+        temp_queue = save_event_queue
+        if index == int(client_index):
+            pass
+        else:
+            while not temp_queue.empty():
+                print(str(type(clients_dic[client_recognizer][int(index)])))
+                clients_dic[client_recognizer][int(index)].put(temp_queue.get())
+                print("after")
+    return clients_dic
 
 
 def add_index_to_dict(s, clients_dic, client_recognizer):
@@ -106,20 +121,19 @@ def main(server_port, recognizer_size):
             else:
                 client_socket.send(b'start sync')
                 # receive client's changes.
-                receive_changes(client_socket, clients_address_dic[client_recognizer])
-                #######
-
+                save_event_queue = EventQueue()
+                # print("before changes -" + str(clients_address_dic[client_recognizer]))
+                save_event_queue = receive_changes(client_socket, clients_address_dic[client_recognizer])
+                clients_dic = insert_changes_to_other_clients(clients_dic, client_recognizer, client_index,
+                                                              save_event_queue)
                 # send changes to client
                 send_changes(clients_dic[client_recognizer][int(client_index)], client_socket)
-        print(str(clients_dic))
         client_socket.close()
 
 
 if __name__ == "__main__":
-    # if len(sys.argv) != 2:
-    #     exit()
-    SERVER_PORT = "12347"  # sys.argv[1]
+    if len(sys.argv) != 2:
+        exit()
+    SERVER_PORT = sys.argv[1]
     RECOGNIZER_SIZE = 128
     main(SERVER_PORT, RECOGNIZER_SIZE)
-
-    #shoval
