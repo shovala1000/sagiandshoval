@@ -33,9 +33,8 @@
 # except KeyboardInterrupt:
 #     my_observer.stop()
 # my_observer.join()
+from watchdog.observers.api import EventQueue
 
-import os
+queue1 = EventQueue()
+print(str(type(queue1)))
 
-src_path = "/home/shoval/Desktop/test/dir1/city"
-source_path = "/home/shoval/Desktop"
-print("1. " + os.path.relpath(src_path, source_path))

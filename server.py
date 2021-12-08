@@ -1,9 +1,27 @@
+import collections
 import os.path
 import socket
 
 from watchdog.observers.api import EventQueue
 
 from utils import *
+
+def insert_changes_to_other_clients(clients_dic, client_recognizer, client_index, save_event_queue):
+    temp_queue = save_event_queue
+    # print("insert_changes_to_other_clients")
+    # print("temp queue - before loop " + str(temp_queue.queue))
+    for index in clients_dic[client_recognizer]:
+        # print("save_event_queue: " + str(save_event_queue.queue))
+        temp_queue = save_event_queue
+        if index == int(client_index):
+            pass
+        else:
+            print("client_index: " + client_index)
+            while not temp_queue.empty():
+                clients_dic[client_recognizer][int(index)].put(temp_queue.get())
+                print("1: : " + str(clients_dic[client_recognizer][int('1')].queue))
+                print("2: " + str(clients_dic[client_recognizer][int('2')].queue))
+    return clients_dic
 
 
 def add_index_to_dict(s, clients_dic, client_recognizer):
@@ -21,7 +39,7 @@ def add_index_to_dict(s, clients_dic, client_recognizer):
     number_of_key = len(clients_dic[client_recognizer].keys())
     # create new client index, inset to the dict with new queue.
     client_index = number_of_key + 1
-    clients_dic[client_recognizer][client_index] = EventQueue().queue
+    clients_dic[client_recognizer][client_index] = EventQueue()
     # send the index to the client.
     s.send(str(client_index).encode(FORMAT))
     return client_index
@@ -115,7 +133,9 @@ def main(server_port, recognizer_size):
                 # print("client_index: "+client_index)
                 # print("queue: "+str(clients_dic[client_recognizer][str(client_index)]))
                 # print("client address: "+str(client_address[client_recognizer]))
-                receive_changes(client_socket, clients_address_dic[client_recognizer])
+                save_events_queue = receive_changes(client_socket, clients_address_dic[client_recognizer])
+                clients_dic = insert_changes_to_other_clients(clients_dic,client_recognizer,client_index,save_events_queue)
+
                 #######
 
                 # send changes to client

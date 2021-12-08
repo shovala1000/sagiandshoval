@@ -101,7 +101,7 @@ if __name__ == "__main__":
     # elif len(sys.argv) == 6:
     #     RECOGNIZE = sys.argv[5]
     RECOGNIZE = CLIENT_NOT_RECOGNIZED
-    # RECOGNIZE ="BdxcdrNQsEOZm06rhxERzZhsdOUDDgyw7c0OwV3ouewTGq2nU8vPv9jB1H7gKA0ielOiqWJOdOpWLp4adIgNj5IF8ov6TRjm4TqYOEMXjqwynD2EE3NLRxzkUU8c7asP"
+    RECOGNIZE ="CB9cFOZRVEWLP4ussO1Dx89krTmHhPyELauLgDdtfVb7ZphzRpFyjrzM1V2YxA7VW2yrU9Uc0QOZzSxWgj8H7EKX5eKngPS1w5Tf0QaMtP6ITJTAUukwQYi8C8n9Y7vA"
     SERVER_IP = "127.0.0.1"  # sys.argv[1]
     SERVER_PORT = "12347"  # sys.argv[2]
     DIR_FOLDER = "/home/shoval/Desktop/client2"  # sys.argv[3]
