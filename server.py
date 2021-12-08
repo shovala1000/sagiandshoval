@@ -68,11 +68,12 @@ def recognized_protocol(s, recognizer, clients_address_dic):
     :return: nothing.
     """
     path = clients_address_dic.get(recognizer)
+    print("in recognized_protocol path is "+path)
     main_dir = os.listdir(path)[0]
     print("main_dir is "+main_dir)
     in_path = os.path.join(path, main_dir)
     print("in_path is: "+in_path)
-    send_all(s, in_path)
+    send_all(s, path)
 
 
 def main(server_port, recognizer_size):
