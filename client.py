@@ -34,6 +34,9 @@ def recognized_protocol(s, recognizer, dir_folder):
     :param dir_folder: is the directed folder.
     :return: nothing.
     """
+    # sending the main_dir name
+    # s.recv(SIZE)
+    # s.send(os.path.basename(dir_folder).encode(FORMAT))
     receive_all(s, dir_folder)
 
 
@@ -86,7 +89,7 @@ def main(server_ip, server_port, dir_folder, recognizer, time_waiting, client_in
         s = init_socket(server_ip, server_port, recognizer, client_index)
         s.recv(SIZE)
         # send client changes
-        send_changes(my_handler.get_queue(), s, os.path.dirname(dir_folder))
+        send_changes(my_handler.get_queue(), s, dir_folder)
 
     # receive changes from server.
     # receive_changes(s, dir_folder)
@@ -98,11 +101,10 @@ if __name__ == "__main__":
     # elif len(sys.argv) == 6:
     #     RECOGNIZE = sys.argv[5]
     RECOGNIZE = CLIENT_NOT_RECOGNIZED
-    # RECOGNIZE =
-    # "1PBZKbBdYhfZRR34fLASbHzVgIeAyHsmh6eTGU2r2MBNfYIgDAZs0IMwgg0UdlvXnlNpnxV2DFIBmeKfwPseESRiUslNsARtMD5AIYHbArCgDBabRQmncrCyoBDCecBA"
+    RECOGNIZE ="PF3WJyelCakDMim5ezKdA3IX2YmnbU423vVIeenAtmhYe8DI0vnTmAjEXYs3fSwgBKm8xONgLLETcImZsdcXLJ6mzy10hx5AePHCU3Fl1BMXrLbXQvr0LKCpsunrsxL5"
     SERVER_IP = "127.0.0.1"  # sys.argv[1]
     SERVER_PORT = "12347"  # sys.argv[2]
-    DIR_FOLDER = "/home/shoval/Desktop/test"  # sys.argv[3]
+    DIR_FOLDER = "/home/shoval/Desktop/client"  # sys.argv[3]
     # DIR_FOLDER = "/home/sagi/PycharmProjects/IntroNetEx2-Client2"  # sys.argv[3]
     TIME = "15"  # sys.argv[4]
     CLIENT_INDEX = CLIENT_HAS_NO_INDEX

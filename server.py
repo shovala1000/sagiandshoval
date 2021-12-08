@@ -1,3 +1,4 @@
+import os.path
 import socket
 
 from watchdog.observers.api import EventQueue
@@ -23,15 +24,15 @@ def add_index_to_dict(s, clients_dic, client_recognizer):
     clients_dic[client_recognizer][client_index] = EventQueue().queue
     # send the index to the client.
     s.send(str(client_index).encode(FORMAT))
+    return client_index
 
 
-def no_recognized_protocol(s, client_recognizer, recognizer_size, clients_dic, clients_address_dic):
+def no_recognized_protocol(s, recognizer_size, clients_dic, clients_address_dic):
     """
     The function will be called when the client recognizer does not exits.
     The method we use is that the server generate a new recognizer for the client and when the client receive the
     recognizer from the server he sends all the data to the server.
     :param s: is the socket
-    :param client_recognizer: is the client recognizer.
     :param recognizer_size: is the client recognizer size.
     :param clients_dic: this dictionary contain client recognizes as keys and each of them has dictionary that
      contains the clients indexes and their event queue as value.
@@ -68,7 +69,9 @@ def recognized_protocol(s, recognizer, clients_address_dic):
     """
     path = clients_address_dic.get(recognizer)
     main_dir = os.listdir(path)[0]
+    print("main_dir is "+main_dir)
     in_path = os.path.join(path, main_dir)
+    print("in_path is: "+in_path)
     send_all(s, in_path)
 
 
@@ -97,10 +100,10 @@ def main(server_port, recognizer_size):
         client_index = client_socket.recv(recognizer_size).decode(FORMAT)
 
         if client_recognizer == CLIENT_NOT_RECOGNIZED:
-            no_recognized_protocol(client_socket, client_recognizer, recognizer_size, clients_dic, clients_address_dic)
+            no_recognized_protocol(client_socket, recognizer_size, clients_dic, clients_address_dic)
         else:
             if client_index == CLIENT_HAS_NO_INDEX:
-                add_index_to_dict(client_socket, clients_dic, client_recognizer)
+                client_index = add_index_to_dict(client_socket, clients_dic, client_recognizer)
                 client_socket.recv(SIZE).decode(FORMAT)
                 recognized_protocol(client_socket, client_recognizer, clients_address_dic)
             else:
