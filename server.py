@@ -6,6 +6,7 @@ from watchdog.observers.api import EventQueue
 
 from utils import *
 
+
 def insert_changes_to_other_clients(clients_dic, client_recognizer, client_index, save_event_queue):
     temp_queue = save_event_queue
     # print("insert_changes_to_other_clients")
@@ -86,11 +87,11 @@ def recognized_protocol(s, recognizer, clients_address_dic):
     :return: nothing.
     """
     path = clients_address_dic.get(recognizer)
-    print("in recognized_protocol path is "+path)
+    print("in recognized_protocol path is " + path)
     main_dir = os.listdir(path)[0]
-    print("main_dir is "+main_dir)
+    print("main_dir is " + main_dir)
     in_path = os.path.join(path, main_dir)
-    print("in_path is: "+in_path)
+    print("in_path is: " + in_path)
     send_all(s, path)
 
 
@@ -134,11 +135,14 @@ def main(server_port, recognizer_size):
                 # print("queue: "+str(clients_dic[client_recognizer][str(client_index)]))
                 # print("client address: "+str(client_address[client_recognizer]))
                 save_events_queue = receive_changes(client_socket, clients_address_dic[client_recognizer])
-                clients_dic = insert_changes_to_other_clients(clients_dic,client_recognizer,client_index,save_events_queue)
-
-                #######
-
+                clients_dic = insert_changes_to_other_clients(clients_dic, client_recognizer, client_index,
+                                                              save_events_queue)
+                # receive from client the main_dir name
+                main_dir_name = client_socket.recv(SIZE).decode(FORMAT)
+                path_with_main_dir = os.path.join(clients_address_dic[client_recognizer],main_dir_name)
+                print("path_with_main_dir: "+path_with_main_dir)
                 # send changes to client
+                send_changes(clients_dic[client_recognizer][int(client_index)], client_socket,path_with_main_dir)
         print(str(clients_dic))
         client_socket.close()
 

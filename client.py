@@ -89,10 +89,12 @@ def main(server_ip, server_port, dir_folder, recognizer, time_waiting, client_in
         s = init_socket(server_ip, server_port, recognizer, client_index)
         s.recv(SIZE)
         # send client changes
+        print("we want dir_folder: "+dir_folder)
         send_changes(my_handler.get_queue(), s, dir_folder)
 
-    # receive changes from server.
-    # receive_changes(s, dir_folder)
+        s.send(os.path.basename(dir_folder).encode(FORMAT))
+        # receive changes from server.
+        receive_changes(s, dir_folder)
 
 
 if __name__ == "__main__":
@@ -101,7 +103,7 @@ if __name__ == "__main__":
     # elif len(sys.argv) == 6:
     #     RECOGNIZE = sys.argv[5]
     RECOGNIZE = CLIENT_NOT_RECOGNIZED
-    RECOGNIZE ="CB9cFOZRVEWLP4ussO1Dx89krTmHhPyELauLgDdtfVb7ZphzRpFyjrzM1V2YxA7VW2yrU9Uc0QOZzSxWgj8H7EKX5eKngPS1w5Tf0QaMtP6ITJTAUukwQYi8C8n9Y7vA"
+    RECOGNIZE ="LtgCUCcPosRJ0HcqAxxSe6wO0BigJqiW5Ay8ZyxPdZT3JtgmKtpYNrlRdf3el5qzj67UvrjGIajxCVkbYhRT9GPhCC101SvZFya0OX9MV7D06CLFRVTQVY6uzFGJbcRH"
     SERVER_IP = "127.0.0.1"  # sys.argv[1]
     SERVER_PORT = "12347"  # sys.argv[2]
     DIR_FOLDER = "/home/shoval/Desktop/client2"  # sys.argv[3]
