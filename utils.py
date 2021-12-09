@@ -250,24 +250,20 @@ def send_changes(event_queue, s, source_path):
         # send if is directory
         s.send(str(is_directory).encode(FORMAT))
         s.recv(SIZE)
-        # print('send_data: source_path is ' + source_path)
-        # print('send_data: src is ' + src_path)
-        # print('send_data: dest is ' + dest_path)
         if watchdog.events.EVENT_TYPE_MOVED == event_type:
             if not is_directory:
-                # print("1st send_data: " + os.path.relpath(dest_path, source_path))
                 send_file_data(s, os.path.relpath(dest_path, source_path), source_path)
                 # finished with sending all files.
-                s.send(END_FILES.encode(FORMAT))
-                s.recv(SIZE)
+            s.send(END_FILES.encode(FORMAT))
+            s.recv(SIZE)
         if watchdog.events.EVENT_TYPE_CREATED == event_type:
             if not is_directory:
                 if os.path.exists(src_path):
                     # print('2nd send_data: ' + os.path.relpath(src_path, source_path))
                     send_file_data(s, os.path.relpath(src_path, source_path), source_path)
-            # finished with sending all files.
-            s.send(END_FILES.encode(FORMAT))
-            s.recv(SIZE)
+                # finished with sending all files.
+                s.send(END_FILES.encode(FORMAT))
+                s.recv(SIZE)
         if watchdog.events.EVENT_TYPE_CLOSED == event_type:
             if os.path.exists(src_path):
                 # print('3rd send_data: ' + os.path.relpath(src_path, source_path))
@@ -301,9 +297,10 @@ def receive_changes(s, dir_path):
         print('event_type in receiving changes: '+event_type)
         # receive event "relative" src_path
         src_path = s.recv(SIZE).decode(FORMAT)
-        # print('not nice src_path: ' + src_path)
-        src_path = os.path.join(dir_path, src_path)
         s.send(b'src_path received')
+        print('not nice src_path: ' + src_path)
+        src_path = os.path.join(dir_path, src_path)
+
         dest_path = ""
         # receive dest_type
         if watchdog.events.EVENT_TYPE_MOVED == event_type:
@@ -311,12 +308,13 @@ def receive_changes(s, dir_path):
             s.send(b'dest_path received')
         # receive if is directory
         is_directory = s.recv(SIZE).decode(FORMAT)
+        print("is_dir: "+str(is_directory) )
         s.send(b'is_directory received')
         # receive event according to the type protocol
         if watchdog.events.EVENT_TYPE_CREATED == event_type:
             on_created_protocol(is_directory, src_path, s, dir_path)
             if is_directory:
-                save_event_queue.put(DirCreatedEvent(dir_path))
+                save_event_queue.put(DirCreatedEvent(src_path))
             else:
                 save_event_queue.put(FileCreatedEvent(src_path))
 
@@ -339,8 +337,8 @@ def receive_changes(s, dir_path):
             save_event_queue.put(FileClosedEvent(src_path))
         # receive event type
         event_type = s.recv(SIZE).decode(FORMAT)
-
         s.send(b'type received')
+
     # print('***receive changes the queue is '+str(save_event_queue.queue))
     return save_event_queue
 
@@ -357,7 +355,7 @@ def on_created_protocol(is_directory, src_path, s, current_path):
     print('on_created_protocol: src: '+src_path)
     print('on_created_protocol: current: '+current_path)
     path = src_path
-    is_directory = str(os.path.isdir(path))
+    # is_directory = str(os.path.isdir(path))
     print('on_created_protocol: isdir: '+is_directory)
     if not os.path.exists(path):
         if 'True' == is_directory:
@@ -382,7 +380,7 @@ def on_deleted_protocol(is_directory, src_path, current_path):
     print('on_deleted_protocol: src: '+src_path)
     # print('on_created_protocol: current: '+current_path)
     # path = src_path  # os.path.join(current_path, os.path.relpath(src_path))
-    is_directory = str(os.path.isdir(src_path))
+    # is_directory = str(os.path.isdir(src_path))
     print('on_deleted_protocol: isdir: '+is_directory)
     if os.path.exists(src_path):
         if 'True' == is_directory:
@@ -407,7 +405,7 @@ def on_moved_protocol(is_directory, src_path, des_path, s, current_path):
     """
     print('on_moved_protocol: src: '+src_path)
     print('on_moved_protocol: current: '+current_path)
-    is_directory = str(os.path.isdir(src_path))
+    # is_directory = str(os.path.isdir(src_path))
     print('on_moved_protocol: isdir: '+is_directory)
     if os.path.exists(src_path):
         on_created_protocol(is_directory, des_path, s, current_path)
@@ -427,7 +425,7 @@ def on_closed_protocol(is_directory, src_path, s, current_path):
     """
     print('on_closed_protocol: src: '+src_path)
     print('on_closed_protocol: current: '+current_path)
-    is_directory = str(os.path.isdir(src_path))
+    # is_directory = str(os.path.isdir(src_path))
     print('on_closed_protocol: isdir: '+is_directory)
     if os.path.exists(src_path):
         on_created_protocol(is_directory, src_path, s, current_path)

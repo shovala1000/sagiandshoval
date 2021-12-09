@@ -91,9 +91,6 @@ def main(server_ip, server_port, dir_folder, recognizer, time_waiting, client_in
         s = init_socket(server_ip, server_port, recognizer, client_index)
         # received start sync
         s.recv(SIZE)
-        # send client changes
-        # print("we want dir_folder: " + dir_folder)
-        # remove from my_handler.get_queue() all the received changes
         save_event_queue = remove_received_changes(my_handler.get_queue(), black_events_queue)
         print('my_handler.get_queue(): '+str(my_handler.get_queue().queue))
         print('black_events_queue: '+str(black_events_queue.queue))
