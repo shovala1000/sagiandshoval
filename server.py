@@ -9,19 +9,19 @@ from utils import *
 
 def insert_changes_to_other_clients(clients_dic, client_recognizer, client_index, save_event_queue):
     temp_queue = save_event_queue
-    # print("insert_changes_to_other_clients")
-    # print("temp queue - before loop " + str(temp_queue.queue))
+#     # print("insert_changes_to_other_clients")
+#     # print("temp queue - before loop " + str(temp_queue.queue))
     for index in clients_dic[client_recognizer]:
-        # print("save_event_queue: " + str(save_event_queue.queue))
+#         # print("save_event_queue: " + str(save_event_queue.queue))
         temp_queue = save_event_queue
         if index == int(client_index):
             pass
         else:
-            print("client_index: " + client_index)
+            # print("client_index: " + client_index)
             while not temp_queue.empty():
                 clients_dic[client_recognizer][int(index)].put(temp_queue.get())
-                print("1: : " + str(clients_dic[client_recognizer][int('1')].queue))
-                print("2: " + str(clients_dic[client_recognizer][int('2')].queue))
+                # print("1: : " + str(clients_dic[client_recognizer][int('1')].queue))
+                # print("2: " + str(clients_dic[client_recognizer][int('2')].queue))
     return clients_dic
 
 
@@ -87,11 +87,11 @@ def recognized_protocol(s, recognizer, clients_address_dic):
     :return: nothing.
     """
     path = clients_address_dic.get(recognizer)
-    print("in recognized_protocol path is " + path)
+    # print("in recognized_protocol path is " + path)
     main_dir = os.listdir(path)[0]
-    print("main_dir is " + main_dir)
+    # print("main_dir is " + main_dir)
     in_path = os.path.join(path, main_dir)
-    print("in_path is: " + in_path)
+    # print("in_path is: " + in_path)
     send_all(s, path)
 
 
@@ -129,21 +129,23 @@ def main(server_port, recognizer_size):
             else:
                 client_socket.send(b'start sync')
                 # receive client's changes.
-                # print("the path changing is: " + str(clients_address_dic[client_recognizer]))
-                # print("client-dic: " + str(clients_dic[client_recognizer]))
-                # print("client_index: "+client_index)
-                # print("queue: "+str(clients_dic[client_recognizer][str(client_index)]))
-                # print("client address: "+str(client_address[client_recognizer]))
+                # # print("the path changing is: " + str(clients_address_dic[client_recognizer]))
+                # # print("client-dic: " + str(clients_dic[client_recognizer]))
+                # # print("client_index: "+client_index)
+                # # print("queue: "+str(clients_dic[client_recognizer][str(client_index)]))
+                # print("client address: "+str(clients_address_dic[client_recognizer]))
                 save_events_queue = receive_changes(client_socket, clients_address_dic[client_recognizer])
                 clients_dic = insert_changes_to_other_clients(clients_dic, client_recognizer, client_index,
                                                               save_events_queue)
                 # receive from client the main_dir name
                 main_dir_name = client_socket.recv(SIZE).decode(FORMAT)
                 path_with_main_dir = os.path.join(clients_address_dic[client_recognizer],main_dir_name)
-                print("path_with_main_dir: "+path_with_main_dir)
+                path_without_main_dir = clients_address_dic[client_recognizer]
+                # print("path_with_main_dir: "+path_with_main_dir)
+                print(' new event_queue: '+str(clients_dic[client_recognizer][int(client_index)].queue))
                 # send changes to client
-                send_changes(clients_dic[client_recognizer][int(client_index)], client_socket,path_with_main_dir)
-        print(str(clients_dic))
+                send_changes(clients_dic[client_recognizer][int(client_index)], client_socket,path_without_main_dir)
+        # print(str(clients_dic))
         client_socket.close()
 
 

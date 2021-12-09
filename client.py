@@ -1,6 +1,7 @@
 import os.path
 import socket
 import time
+from queue import Empty
 
 from watchdog.observers import Observer
 from utils import *
@@ -63,12 +64,6 @@ def main(server_ip, server_port, dir_folder, recognizer, time_waiting, client_in
     """
     # initalize socket
     s = init_socket(server_ip, server_port, recognizer, client_index)
-    # initialize handler and observer
-    my_event_queue = EventQueue()
-    my_handler = MonitorFolder(RECOGNIZE, my_event_queue)
-    my_observer = Observer()
-    my_observer.schedule(my_handler, dir_folder, True)
-    my_observer.start()
 
     # checking if the recognizer is exists.
     if recognizer == CLIENT_NOT_RECOGNIZED:
@@ -82,19 +77,46 @@ def main(server_ip, server_port, dir_folder, recognizer, time_waiting, client_in
             recognized_protocol(s, recognizer, dir_folder)
         # Check the case where the recognizer and index exist
 
+    # initialize handler and observer
+    my_event_queue = EventQueue()
+    my_handler = MonitorFolder(RECOGNIZE, my_event_queue)
+    my_observer = Observer()
+    my_observer.schedule(my_handler, dir_folder, True)
+    my_observer.start()
     # check for changes
+    black_events_queue = EventQueue()
     while True:
         s.close()
         time.sleep(int(time_waiting))
         s = init_socket(server_ip, server_port, recognizer, client_index)
+        # received start sync
         s.recv(SIZE)
         # send client changes
-        print("we want dir_folder: "+dir_folder)
-        send_changes(my_handler.get_queue(), s, dir_folder)
-
+        # print("we want dir_folder: " + dir_folder)
+        # remove from my_handler.get_queue() all the received changes
+        save_event_queue = remove_received_changes(my_handler.get_queue(), black_events_queue)
+        send_changes(save_event_queue, s, dir_folder)
         s.send(os.path.basename(dir_folder).encode(FORMAT))
         # receive changes from server.
-        receive_changes(s, dir_folder)
+        black_events_queue = receive_changes(s, dir_folder)
+        # print('black_events_queue: ' + str(black_events_queue.queue))
+
+
+def remove_received_changes(save_queue, black_queue):
+    temp_queue = EventQueue()
+    while not black_queue.empty():
+        # print(str(len(black_queue)))
+        black_event = black_queue.get()
+        while not save_queue.empty():
+            save_event = save_queue.get()
+            if not save_event == black_event:
+                temp_queue.put(save_event)
+        while temp_queue.empty():
+            save_queue.put(temp_queue.get())
+
+    # print('black_queue: ' + str(black_queue.queue))
+    # print('save_queue: ' + str(save_queue.queue))
+    return save_queue
 
 
 if __name__ == "__main__":
@@ -103,11 +125,11 @@ if __name__ == "__main__":
     # elif len(sys.argv) == 6:
     #     RECOGNIZE = sys.argv[5]
     RECOGNIZE = CLIENT_NOT_RECOGNIZED
-    RECOGNIZE ="LtgCUCcPosRJ0HcqAxxSe6wO0BigJqiW5Ay8ZyxPdZT3JtgmKtpYNrlRdf3el5qzj67UvrjGIajxCVkbYhRT9GPhCC101SvZFya0OX9MV7D06CLFRVTQVY6uzFGJbcRH"
+    RECOGNIZE = "djO2Owuy7QDHDg6q6gTnXvSPMpfbu7OTSEbvpd6NB8iN1vP2jLtvAvgo48CLvAY3oktOJizOOQ5MJsKgZaGFCPgzaVPJwYL6WeYDAIsg9HSpDwGvKbzlm0Z3AfrmKeaN"
     SERVER_IP = "127.0.0.1"  # sys.argv[1]
     SERVER_PORT = "12347"  # sys.argv[2]
     DIR_FOLDER = "/home/shoval/Desktop/client2"  # sys.argv[3]
     # DIR_FOLDER = "/home/sagi/PycharmProjects/IntroNetEx2-Client2"  # sys.argv[3]
-    TIME = "15"  # sys.argv[4]
+    TIME = "7"  # sys.argv[4]
     CLIENT_INDEX = CLIENT_HAS_NO_INDEX
     main(SERVER_IP, SERVER_PORT, DIR_FOLDER, RECOGNIZE, TIME, CLIENT_INDEX)

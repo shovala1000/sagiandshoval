@@ -74,12 +74,12 @@ def send_file_data(s, head_file_path, abs_path):
     :param head_file_path: the path starting with the head folder
     :param abs_path: the parent path of the head folder
     """
-    print("head_file_path = "+head_file_path)
-    print("abs_path = "+abs_path)
+    print("head_file_path = " + head_file_path)
+    print("abs_path = " + abs_path)
     # send the relative file's path.
     s.send(head_file_path.encode(FORMAT))
     s.recv(SIZE).decode(FORMAT)
-    # print('file path is: ' + os.path.join(head_file_path, file_name))
+    print('abs_path_file: ' + os.path.join(abs_path, head_file_path))
     abs_path_file = os.path.join(abs_path, head_file_path)
     # open the file and read data
     new_file = open(abs_path_file, 'rb')
@@ -106,17 +106,17 @@ def send_all(s, source_dir_path):
         # send the dir_path.
         s.send(dir_path.encode(FORMAT))
         s.recv(SIZE)
-        print("parent_src_path: "+source_dir_path)
+        # print("parent_src_path: " + source_dir_path)
         relative_path = os.path.relpath(dir_path, source_dir_path)
-        print("relative_path: "+relative_path)
+        # print("relative_path: " + relative_path)
         real_path = os.path.realpath(relative_path)
-        print("real_path: "+real_path)
+        # print("real_path: " + real_path)
         # sending all the dirs names.
         for dir_name in dirs_list:
             join_specific_dir_name = os.path.join(real_path, dir_name)
-            print("join_specific_dir_name: "+join_specific_dir_name)
+            # print("join_specific_dir_name: " + join_specific_dir_name)
             rel_join = os.path.relpath(join_specific_dir_name)
-            print("rel_join: "+rel_join)
+            # print("rel_join: " + rel_join)
             s.send(rel_join.encode(FORMAT))
             s.recv(SIZE).decode(FORMAT)
         # finished with sending the dirs and starting with sending the files.
@@ -124,9 +124,11 @@ def send_all(s, source_dir_path):
         s.recv(SIZE).decode(FORMAT)
         for file_name in files_list:
             join_specific_dir_name = os.path.join(real_path, file_name)
-            print("join_specific_dir_name: "+join_specific_dir_name)
+            # print("join_specific_dir_name: " + join_specific_dir_name)
             rel_join = os.path.relpath(join_specific_dir_name)
-            print("rel_join: "+rel_join)
+            # print("rel_join: " + rel_join)
+            print('*rel_joint*: '+rel_join)
+            print('*source_dir_path*: '+source_dir_path)
             send_file_data(s, rel_join, source_dir_path)
         # finished with sending all files.
         s.send(END_FILES.encode(FORMAT))
@@ -165,8 +167,8 @@ def receive_files_from_path(s, des_folder_path):
     while not file_name == END_FILES:
         # creates the file
         file_path = os.path.join(des_folder_path, file_name)
-        # print("file name is: " + file_name)
-        # print("file_path is: " + file_path)
+#         # print("file name is: " + file_name)
+#         # print("file_path is: " + file_path)
         with open(file_path, 'wb') as f:
             file_data = s.recv(SIZE)
             s.send(b'file_data received')
@@ -191,7 +193,7 @@ def receive_all(s, des_folder_path):
     # receive the main dir
     current_dir = bytes(s.recv(SIZE)).decode(FORMAT)
     s.send(b' dir received')
-    main_dir_name =''
+    main_dir_name = ''
     # if not current_dir == END_SEND_ALL:
     #     main_dir_name = current_dir
     dir_path = os.path.join(des_folder_path, os.path.basename(current_dir))
@@ -229,8 +231,19 @@ def send_changes(event_queue, s, source_path):
         # send event type
         s.send(event_type.encode(FORMAT))
         s.recv(SIZE)
+
+        print('event_type is: ' +event_type)
+        print('src_path is: ' + src_path)
+        print('dest_path is: '+dest_path)
+        print('is_directory is: '+str(is_directory))
+        print('source_path is: ' + source_path)
+        print('os.path.relpath(src_path,source_path) --' + os.path.relpath(src_path, source_path))
+
+        # send with or without the main dir name?
+        # need examples
+
         # send event "relative" src_path
-        s.send(os.path.relpath(src_path,source_path).encode(FORMAT))
+        s.send(os.path.relpath(src_path, source_path).encode(FORMAT))
         s.recv(SIZE)
 
         if watchdog.events.EVENT_TYPE_MOVED == event_type:
@@ -240,8 +253,12 @@ def send_changes(event_queue, s, source_path):
         # send if is directory
         s.send(str(is_directory).encode(FORMAT))
         s.recv(SIZE)
+        # print('send_data: source_path is ' + source_path)
+        # print('send_data: src is ' + src_path)
+        # print('send_data: dest is ' + dest_path)
         if watchdog.events.EVENT_TYPE_MOVED == event_type:
             if not is_directory:
+                # print("1st send_data: " + os.path.relpath(dest_path, source_path))
                 send_file_data(s, os.path.relpath(dest_path, source_path), source_path)
                 # finished with sending all files.
                 s.send(END_FILES.encode(FORMAT))
@@ -249,12 +266,14 @@ def send_changes(event_queue, s, source_path):
         if watchdog.events.EVENT_TYPE_CREATED == event_type:
             if not is_directory:
                 if os.path.exists(src_path):
+                    # print('2nd send_data: ' + os.path.relpath(src_path, source_path))
                     send_file_data(s, os.path.relpath(src_path, source_path), source_path)
                 # finished with sending all files.
                 s.send(END_FILES.encode(FORMAT))
                 s.recv(SIZE)
         if watchdog.events.EVENT_TYPE_CLOSED == event_type:
             if os.path.exists(src_path):
+                # print('3rd send_data: ' + os.path.relpath(src_path, source_path))
                 send_file_data(s, os.path.relpath(src_path, source_path), source_path)
                 # finished with sending all files.
                 s.send(END_FILES.encode(FORMAT))
@@ -284,7 +303,8 @@ def receive_changes(s, dir_path):
     while not "End" == event_type:
         # receive event "relative" src_path
         src_path = s.recv(SIZE).decode(FORMAT)
-        src_path = os.path.join(dir_path,src_path)
+        # print('not nice src_path: ' + src_path)
+        src_path = os.path.join(dir_path, src_path)
         s.send(b'src_path received')
         dest_path = ""
         # receive dest_type
@@ -331,7 +351,11 @@ def on_created_protocol(is_directory, src_path, s, current_path):
     :param s: is the socket
     :return: no returning value.
     """
+    print('on_created_protocol: src: '+src_path)
+    print('on_created_protocol: current: '+current_path)
     path = os.path.join(current_path, src_path)
+    is_directory = str(os.path.isdir(path))
+    print('on_created_protocol: isdir: '+is_directory)
     if not os.path.exists(path):
         if 'True' == is_directory:
             os.makedirs(path)
@@ -352,16 +376,20 @@ def on_deleted_protocol(is_directory, src_path, current_path):
     :param current_path: is the current path of a dir.
     :return: no return value.
     """
-    path = src_path #os.path.join(current_path, os.path.relpath(src_path))
-    if os.path.exists(path):
+    print('on_deleted_protocol: src: '+src_path)
+    # print('on_created_protocol: current: '+current_path)
+    # path = src_path  # os.path.join(current_path, os.path.relpath(src_path))
+    is_directory = str(os.path.isdir(src_path))
+    print('on_deleted_protocol: isdir: '+is_directory)
+    if os.path.exists(src_path):
         if 'True' == is_directory:
-            if 0 == len(os.listdir(path)):
-                os.rmdir(path)
+            if 0 == len(os.listdir(src_path)):
+                os.rmdir(src_path)
             else:
-                delete_dir_recursively(path)
-                os.rmdir(path)
-        elif os.path.exists(path):
-            os.remove(path)
+                delete_dir_recursively(src_path)
+                os.rmdir(src_path)
+        elif os.path.exists(src_path):
+            os.remove(src_path)
 
 
 def on_moved_protocol(is_directory, src_path, des_path, s, current_path):
@@ -374,6 +402,10 @@ def on_moved_protocol(is_directory, src_path, des_path, s, current_path):
     :param current_path: is the current path of a dir.
     :return: no returning value.
     """
+    print('on_moved_protocol: src: '+src_path)
+    print('on_moved_protocol: current: '+current_path)
+    is_directory = str(os.path.isdir(src_path))
+    print('on_moved_protocol: isdir: '+is_directory)
     if os.path.exists(src_path):
         on_created_protocol(is_directory, des_path, s, current_path)
         on_deleted_protocol(is_directory, src_path, current_path)
@@ -390,9 +422,14 @@ def on_closed_protocol(is_directory, src_path, s, current_path):
     :param current_path: is the current path of a dir.
     :return: no returning value.
     """
-
+    print('on_closed_protocol: src: '+src_path)
+    print('on_closed_protocol: current: '+current_path)
+    is_directory = str(os.path.isdir(src_path))
+    print('on_closed_protocol: isdir: '+is_directory)
     if os.path.exists(src_path):
         on_created_protocol(is_directory, src_path, s, current_path)
+
+
 def delete_dir_recursively(path):
     """
     The function will receive a folder and delete her recursively.
@@ -454,6 +491,6 @@ def handle_queue(event_queue):
             new_event_queue.put(current_event)
 
     # return the new queue.
-    print("new_event_queue: " + str(new_event_queue.queue))
-    print("event_queue after: " + str(event_queue.queue))
+    # print("new_event_queue: " + str(new_event_queue.queue))
+    # print("event_queue after: " + str(event_queue.queue))
     return new_event_queue
