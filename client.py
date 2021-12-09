@@ -1,8 +1,7 @@
 import os.path
 import socket
+import sys
 import time
-from queue import Empty
-
 import watchdog.events
 from watchdog.observers import Observer
 from utils import *
@@ -36,13 +35,19 @@ def recognized_protocol(s, recognizer, dir_folder):
     :param dir_folder: is the directed folder.
     :return: nothing.
     """
-    # sending the main_dir name
-    # s.recv(SIZE)
-    # s.send(os.path.basename(dir_folder).encode(FORMAT))
+
     receive_all(s, dir_folder)
 
 
 def init_socket(server_ip, server_port, recognizer, client_index):
+    """
+    initialize sockent and connection with the server
+    :param server_ip: is the server's ip
+    :param server_port: is the server's port
+    :param recognizer: is the client recognizer
+    :param client_index: is the client's index
+    :return:
+    """
     # recognized and connected to the server
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((server_ip, int(server_port)))
@@ -61,11 +66,9 @@ def main(server_ip, server_port, dir_folder, recognizer, time_waiting, client_in
     :param dir_folder: is the directed folder.
     :param recognizer: is the client recognizer.
     :param client_index: is the client index in the clients_dic dictionary.
-    :return:
     """
     # initalize socket
     s = init_socket(server_ip, server_port, recognizer, client_index)
-
     # checking if the recognizer is exists.
     if recognizer == CLIENT_NOT_RECOGNIZED:
         recognizer, client_index = no_recognized_protocol(s, recognizer, dir_folder, client_index)
@@ -76,7 +79,6 @@ def main(server_ip, server_port, dir_folder, recognizer, time_waiting, client_in
             client_index = s.recv(SIZE).decode(FORMAT)
             s.send(b'index received')
             recognized_protocol(s, recognizer, dir_folder)
-        # Check the case where the recognizer and index exist
 
     # initialize handler and observer
     my_event_queue = EventQueue()
@@ -84,34 +86,28 @@ def main(server_ip, server_port, dir_folder, recognizer, time_waiting, client_in
     my_observer = Observer()
     my_observer.schedule(my_handler, dir_folder, True)
     my_observer.start()
-    # check for changes
+    # black queue for the events the client received.
     black_events_queue = EventQueue()
-
-    # print('RECOGNIZE: '+recognizer)
+    # loop that runs forever for sync with the server (sending and receiving changes)
     while True:
         s.close()
         time.sleep(int(time_waiting))
         s = init_socket(server_ip, server_port, recognizer, client_index)
         # received start sync
         s.recv(SIZE)
+        # save_event_queue is a queue with all the changes the client did
         save_event_queue = my_handler.get_queue()
+
         temp_queue = EventQueue()
         while not save_event_queue.empty():
             current_event = save_event_queue.get()
-            print("current_event: "+str(current_event))
             if current_event.event_type == watchdog.events.EVENT_TYPE_CLOSED:
-                print("yes1")
                 temp2_queue = EventQueue()
-                print("temp2: "+str(temp2_queue.queue))
-                print("before temp_queue: " + str(temp_queue.queue))
                 while not temp_queue.empty():
                     temp_event = temp_queue.get()
-                    print("temp_queue: "+str(temp_queue.queue))
                     if temp_event.event_type == watchdog.events.EVENT_TYPE_CREATED or temp_event.event_type == watchdog.events.EVENT_TYPE_DELETED:
-                        print('temp: '+temp_event.src_path+"\ncurrent: "+current_event.src_path)
                         if not temp_event.src_path == current_event.src_path:
                             temp2_queue.put(temp_event)
-                            print("temp_2: "+str(temp2_queue.queue))
                     else:
                         temp2_queue.put(temp_event)
                 while not temp2_queue.empty():
@@ -119,53 +115,47 @@ def main(server_ip, server_port, dir_folder, recognizer, time_waiting, client_in
 
             else:
                 temp_queue.put(current_event)
-                print("temp_ queue2: "+str(temp_queue.queue))
         while not temp_queue.empty():
             save_event_queue.put(temp_queue.get())
-        print('\nsending this queue: '+str(save_event_queue.queue))
+        # removing all the changes the client just received
         remove_received_changes(my_handler.get_queue(), black_events_queue)
+        # send all changes to the server
         send_changes(save_event_queue, s, dir_folder)
         s.send(os.path.basename(dir_folder).encode(FORMAT))
-        # receive changes from server.
+        # save the events the client received.
         black_events_queue = receive_changes(s, dir_folder)
 
 
-#         # print('black_events_queue: ' + str(black_events_queue.queue))
-
-
 def remove_received_changes(save_queue, black_queue):
-    print('black_queue: ' + str(black_queue.queue))
-    print('save_queue: ' + str(save_queue.queue))
+    """
+    removing all the eventsthat in the black_queue from the save_queue
+    :param save_queue: is a queue of events
+    :param black_queue: is a queue of events
+    :return:
+    """
+
     temp_queue = EventQueue()
     while not black_queue.empty():
         black_event = black_queue.get()
-        print('black_event: ' + str(black_event))
         while not save_queue.empty():
             save_event = save_queue.get()
-            print("save_event: " + str(save_event))
-            if not save_event == black_event:  # and os.path.exists(save_event.src_path):
-                print("save event is not black event")
+            if not save_event == black_event:
                 temp_queue.put(save_event)
         while not temp_queue.empty():
             save_queue.put(temp_queue.get())
 
-    print("end save: " + str(save_queue.queue))
-    print("end black: " + str(black_queue.queue))
-    print("end temp: " + str(temp_queue.queue))
     return save_queue
 
 
 if __name__ == "__main__":
-    # if len(sys.argv) < 5 or len(sys.argv) > 6:
-    #     exit()
-    # elif len(sys.argv) == 6:
-    #     RECOGNIZE = sys.argv[5]
     RECOGNIZE = CLIENT_NOT_RECOGNIZED
-    RECOGNIZE = "xwKs3RDjbrZNA6NWJXlGABCGqrlKVygelWmkN1fFaITMeT6BhsBlUnoWmpwHP7MC1jQr31DmgIeyjPuJGFQW5HiDuzT6wDGdHot3E3QasdURffEc4L0mRaTm5ExhSX6V"
-    SERVER_IP = "127.0.0.1"  # "192.168.43.12"  # sys.argv[1]
-    SERVER_PORT = "12347"  # sys.argv[2]
-    DIR_FOLDER = "/home/shoval/Desktop/client2"  # sys.argv[3]
-    # DIR_FOLDER = "/home/sagi/PycharmProjects/IntroNetEx2-Client2"  # sys.argv[3]
-    TIME = "7"  # sys.argv[4]
+    if len(sys.argv) < 5 or len(sys.argv) > 6:
+        exit()
+    elif len(sys.argv) == 6:
+        RECOGNIZE = sys.argv[5]
+    SERVER_IP = sys.argv[1]
+    SERVER_PORT = sys.argv[2]
+    DIR_FOLDER = sys.argv[3]
+    TIME = sys.argv[4]
     CLIENT_INDEX = CLIENT_HAS_NO_INDEX
     main(SERVER_IP, SERVER_PORT, DIR_FOLDER, RECOGNIZE, TIME, CLIENT_INDEX)
