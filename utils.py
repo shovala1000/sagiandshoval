@@ -162,13 +162,12 @@ def receive_files_from_path(s, des_folder_path):
     """
     # received file's name
     file_name = bytes(s.recv(SIZE)).decode(FORMAT)
+    print('file name: ' + file_name)
     s.send(b'file_name received')
     # loop runs until received all the files.
     while not file_name == END_FILES:
         # creates the file
         file_path = os.path.join(des_folder_path, file_name)
-        #         # print("file name is: " + file_name)
-        #         # print("file_path is: " + file_path)
         with open(file_path, 'wb') as f:
             file_data = s.recv(SIZE)
             s.send(b'file_data received')
@@ -405,7 +404,6 @@ def on_moved_protocol(is_directory, src_path, des_path, s, current_path):
     """
     print('on_moved_protocol: src: ' + src_path)
     print('on_moved_protocol: current: ' + current_path)
-    # is_directory = str(os.path.isdir(src_path))
     print('on_moved_protocol: isdir: ' + is_directory)
     if os.path.exists(src_path):
         on_created_protocol(is_directory, des_path, s, current_path)
@@ -423,12 +421,22 @@ def on_closed_protocol(is_directory, src_path, s, current_path):
     :param current_path: is the current path of a dir.
     :return: no returning value.
     """
+    # print('on_closed_protocol: src: ' + src_path)
+    # print('on_closed_protocol: current: ' + current_path)
+    # # is_directory = str(os.path.isdir(src_path))
+    # print('on_closed_protocol: isdir: ' + is_directory)
+    # if os.path.exists(src_path):
+    #     on_created_protocol(is_directory, src_path, s, current_path)
+
     print('on_closed_protocol: src: ' + src_path)
     print('on_closed_protocol: current: ' + current_path)
-    # is_directory = str(os.path.isdir(src_path))
     print('on_closed_protocol: isdir: ' + is_directory)
     if os.path.exists(src_path):
-        on_created_protocol(is_directory, src_path, s, current_path)
+        on_deleted_protocol(is_directory, src_path, current_path)
+        on_created_protocol(is_directory,src_path,s,current_path)
+        if 'True' == is_directory:
+            print('its true: '+src_path)
+            os.rmdir(src_path)
 
 
 def delete_dir_recursively(path):
@@ -490,8 +498,4 @@ def handle_queue(event_queue):
         # if the current event in deleted
         if current_event.event_type == watchdog.events.EVENT_TYPE_DELETED:
             new_event_queue.put(current_event)
-
-    # return the new queue.
-    # print("new_event_queue: " + str(new_event_queue.queue))
-    # print("event_queue after: " + str(event_queue.queue))
     return new_event_queue
