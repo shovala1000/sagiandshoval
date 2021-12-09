@@ -8,21 +8,39 @@ from utils import *
 
 
 def insert_changes_to_other_clients(clients_dic, client_recognizer, client_index, save_event_queue):
+    print('***** save_event_queue before insert: ' + str(save_event_queue.queue))
     temp_queue = EventQueue()
     for index in clients_dic[client_recognizer]:
-        event = save_event_queue.get()
-        temp_queue.put(event)
-        if index == int(client_index):
-            pass
-        else:
+        print('not int(index) == int(client_index): ' + str(not int(index) == int(client_index)))
+        if not int(index) == int(client_index):
             while not save_event_queue.empty():
-                clients_dic[client_recognizer][int(index)].put(event)
+                print('not save_event_queue.empty(): ' + str(not save_event_queue.empty()))
                 event = save_event_queue.get()
+                print('event: ' + str(event))
                 temp_queue.put(event)
+                clients_dic[client_recognizer][int(index)].put(event)
+            print('queue in index ' + str(index) + ' is: ' + str(clients_dic[client_recognizer][int(index)].queue))
         while not temp_queue.empty():
             save_event_queue.put(temp_queue.get())
+    print('client_dic in the end is: \n' + str(clients_dic))
     return clients_dic
 
+
+# def insert_changes_to_other_clients(clients_dic, client_recognizer, client_index, save_event_queue):
+#     temp_queue = save_event_queue
+#     # print("insert_changes_to_other_clients")
+#     # print("temp queue - before loop " + str(temp_queue.queue))
+#     for index in clients_dic[client_recognizer]:
+#         # print("save_event_queue: " + str(save_event_queue.queue))
+#         temp_queue = save_event_queue
+#         if index == int(client_index):
+#             pass
+#         else:
+#             while not temp_queue.empty():
+#                 print(str(type(clients_dic[client_recognizer][int(index)])))
+#                 clients_dic[client_recognizer][int(index)].put(temp_queue.get())
+#                 print("after")
+#     return clients_dic
 
 def add_index_to_dict(s, clients_dic, client_recognizer):
     """
@@ -128,21 +146,13 @@ def main(server_port, recognizer_size):
             else:
                 client_socket.send(b'start sync')
                 # receive client's changes.
-                # # print("the path changing is: " + str(clients_address_dic[client_recognizer]))
-                # # print("client-dic: " + str(clients_dic[client_recognizer]))
-                # # print("client_index: "+client_index)
-                # # print("queue: "+str(clients_dic[client_recognizer][str(client_index)]))
-                # print("client address: "+str(clients_address_dic[client_recognizer]))
                 save_events_queue = receive_changes(client_socket, clients_address_dic[client_recognizer])
-                print('save_events_queue: ' + str(save_events_queue.queue))
-                if not save_events_queue.empty():
-                    clients_dic = insert_changes_to_other_clients(clients_dic, client_recognizer, client_index,
-                                                                  save_events_queue)
-                # receive from client the main_dir name
-                main_dir_name = client_socket.recv(SIZE).decode(FORMAT)
-                path_with_main_dir = os.path.join(clients_address_dic[client_recognizer], main_dir_name)
+                clients_dic = insert_changes_to_other_clients(clients_dic, client_recognizer, client_index,
+                                                              save_events_queue)
+                ################## receive from client the main_dir name
+                client_socket.recv(SIZE).decode(FORMAT)
+
                 path_without_main_dir = clients_address_dic[client_recognizer]
-                # print("path_with_main_dir: "+path_with_main_dir)
                 # send changes to client
                 print('server send changes queue: ' + str(clients_dic[client_recognizer][int(client_index)].queue))
                 send_changes(clients_dic[client_recognizer][int(client_index)], client_socket, path_without_main_dir)

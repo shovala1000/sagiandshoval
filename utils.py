@@ -316,7 +316,7 @@ def receive_changes(s, dir_path):
         if watchdog.events.EVENT_TYPE_CREATED == event_type:
             on_created_protocol(is_directory, src_path, s, dir_path)
             if is_directory:
-                save_event_queue.put(DirCreatedEvent(src_path))
+                save_event_queue.put(DirCreatedEvent(dir_path))
             else:
                 save_event_queue.put(FileCreatedEvent(src_path))
 
@@ -341,6 +341,7 @@ def receive_changes(s, dir_path):
         event_type = s.recv(SIZE).decode(FORMAT)
 
         s.send(b'type received')
+    # print('***receive changes the queue is '+str(save_event_queue.queue))
     return save_event_queue
 
 
@@ -355,7 +356,7 @@ def on_created_protocol(is_directory, src_path, s, current_path):
     """
     print('on_created_protocol: src: '+src_path)
     print('on_created_protocol: current: '+current_path)
-    path = os.path.join(current_path, src_path)
+    path = src_path
     is_directory = str(os.path.isdir(path))
     print('on_created_protocol: isdir: '+is_directory)
     if not os.path.exists(path):
