@@ -74,12 +74,12 @@ def send_file_data(s, head_file_path, abs_path):
     :param head_file_path: the path starting with the head folder
     :param abs_path: the parent path of the head folder
     """
-    print("head_file_path = " + head_file_path)
-    print("abs_path = " + abs_path)
+    # print("head_file_path = " + head_file_path)
+    # print("abs_path = " + abs_path)
     # send the relative file's path.
     s.send(head_file_path.encode(FORMAT))
     s.recv(SIZE).decode(FORMAT)
-    print('abs_path_file: ' + os.path.join(abs_path, head_file_path))
+    # print('abs_path_file: ' + os.path.join(abs_path, head_file_path))
     abs_path_file = os.path.join(abs_path, head_file_path)
     # open the file and read data
     new_file = open(abs_path_file, 'rb')
@@ -127,8 +127,8 @@ def send_all(s, source_dir_path):
             # print("join_specific_dir_name: " + join_specific_dir_name)
             rel_join = os.path.relpath(join_specific_dir_name)
             # print("rel_join: " + rel_join)
-            print('*rel_joint*: '+rel_join)
-            print('*source_dir_path*: '+source_dir_path)
+            # print('*rel_joint*: '+rel_join)
+            # print('*source_dir_path*: '+source_dir_path)
             send_file_data(s, rel_join, source_dir_path)
         # finished with sending all files.
         s.send(END_FILES.encode(FORMAT))
@@ -239,9 +239,6 @@ def send_changes(event_queue, s, source_path):
         print('source_path is: ' + source_path)
         print('os.path.relpath(src_path,source_path) --' + os.path.relpath(src_path, source_path))
 
-        # send with or without the main dir name?
-        # need examples
-
         # send event "relative" src_path
         s.send(os.path.relpath(src_path, source_path).encode(FORMAT))
         s.recv(SIZE)
@@ -268,9 +265,9 @@ def send_changes(event_queue, s, source_path):
                 if os.path.exists(src_path):
                     # print('2nd send_data: ' + os.path.relpath(src_path, source_path))
                     send_file_data(s, os.path.relpath(src_path, source_path), source_path)
-                # finished with sending all files.
-                s.send(END_FILES.encode(FORMAT))
-                s.recv(SIZE)
+            # finished with sending all files.
+            s.send(END_FILES.encode(FORMAT))
+            s.recv(SIZE)
         if watchdog.events.EVENT_TYPE_CLOSED == event_type:
             if os.path.exists(src_path):
                 # print('3rd send_data: ' + os.path.relpath(src_path, source_path))
@@ -301,6 +298,7 @@ def receive_changes(s, dir_path):
     event_type = s.recv(SIZE).decode(FORMAT)
     s.send(b'type received')
     while not "End" == event_type:
+        print('event_type in receiving changes: '+event_type)
         # receive event "relative" src_path
         src_path = s.recv(SIZE).decode(FORMAT)
         # print('not nice src_path: ' + src_path)
@@ -318,9 +316,9 @@ def receive_changes(s, dir_path):
         if watchdog.events.EVENT_TYPE_CREATED == event_type:
             on_created_protocol(is_directory, src_path, s, dir_path)
             if is_directory:
-                save_event_queue.put(DirCreatedEvent(dir_path))
+                save_event_queue.put(DirCreatedEvent(src_path))
             else:
-                save_event_queue.put(FileCreatedEvent(dir_path))
+                save_event_queue.put(FileCreatedEvent(src_path))
 
         elif watchdog.events.EVENT_TYPE_DELETED == event_type:
             on_deleted_protocol(is_directory, src_path, dir_path)
@@ -341,6 +339,7 @@ def receive_changes(s, dir_path):
             save_event_queue.put(FileClosedEvent(src_path))
         # receive event type
         event_type = s.recv(SIZE).decode(FORMAT)
+
         s.send(b'type received')
     return save_event_queue
 

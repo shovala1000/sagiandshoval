@@ -114,7 +114,7 @@ def remove_received_changes(save_queue, black_queue):
             save_event = save_queue.get()
             if not save_event == black_event:
                 temp_queue.put(save_event)
-        while temp_queue.empty():
+        while not temp_queue.empty():
             save_queue.put(temp_queue.get())
 
     # print('black_queue: ' + str(black_queue.queue))
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     # elif len(sys.argv) == 6:
     #     RECOGNIZE = sys.argv[5]
     RECOGNIZE = CLIENT_NOT_RECOGNIZED
-    RECOGNIZE = "ZWHMXejcNuZWd7hLWyR8JtMlGBMKjWx8ICwKxL5B043GRIM8abntMbpK4N2B7vep5G1itZAPrcm1FmEN2fI9UL8RJbALIi2ZARoe0kWmkl8V27hTiX75Z8TyolyeLd1d"
+    RECOGNIZE = "58RrNj7ekaHmWR9LYhu0FCOKIPPHIYOKBJxTt7AF8HryxlYImo2KLmY7g9MeXqs90wS0wULwRJk1vJwDTIg0SIwuxmHsuMFr7t7MrGKaU9LqnFo8bo0LtE3PnVItWix2"
     SERVER_IP = "127.0.0.1"  # sys.argv[1]
     SERVER_PORT = "12347"  # sys.argv[2]
     DIR_FOLDER = "/home/shoval/Desktop/client2"  # sys.argv[3]
