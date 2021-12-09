@@ -321,18 +321,21 @@ def receive_changes(s, dir_path):
                 save_event_queue.put(DirCreatedEvent(dir_path))
             else:
                 save_event_queue.put(FileCreatedEvent(dir_path))
+
         elif watchdog.events.EVENT_TYPE_DELETED == event_type:
             on_deleted_protocol(is_directory, src_path, dir_path)
             if is_directory:
                 save_event_queue.put(DirDeletedEvent(src_path))
             else:
                 save_event_queue.put(FileDeletedEvent(src_path))
+
         elif watchdog.events.EVENT_TYPE_MOVED == event_type:
             on_moved_protocol(is_directory, src_path, dest_path, s, dir_path)
             if is_directory:
                 save_event_queue.put(DirMovedEvent(src_path, dest_path))
             else:
                 save_event_queue.put(FileMovedEvent(src_path, dest_path))
+
         elif watchdog.events.EVENT_TYPE_CLOSED == event_type:
             on_closed_protocol(is_directory, src_path, s, dir_path)
             save_event_queue.put(FileClosedEvent(src_path))
