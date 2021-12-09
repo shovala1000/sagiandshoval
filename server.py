@@ -147,6 +147,7 @@ def main(server_port, recognizer_size):
                 client_socket.send(b'start sync')
                 # receive client's changes.
                 save_events_queue = receive_changes(client_socket, clients_address_dic[client_recognizer])
+                print('\nserver receive changes: '+str(save_events_queue.queue)+'\n')
                 clients_dic = insert_changes_to_other_clients(clients_dic, client_recognizer, client_index,
                                                               save_events_queue)
                 ################## receive from client the main_dir name
@@ -154,7 +155,7 @@ def main(server_port, recognizer_size):
 
                 path_without_main_dir = clients_address_dic[client_recognizer]
                 # send changes to client
-                print('server send changes queue: ' + str(clients_dic[client_recognizer][int(client_index)].queue))
+                print('\nserver send changes queue: ' + str(clients_dic[client_recognizer][int(client_index)].queue)+'\n')
                 send_changes(clients_dic[client_recognizer][int(client_index)], client_socket, path_without_main_dir)
         # print(str(clients_dic))
         client_socket.close()

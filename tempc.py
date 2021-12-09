@@ -33,8 +33,7 @@
 # except KeyboardInterrupt:
 #     my_observer.stop()
 # my_observer.join()
+from watchdog.events import DirCreatedEvent
 from watchdog.observers.api import EventQueue
 
-queue1 = EventQueue()
-print(str(type(queue1)))
 

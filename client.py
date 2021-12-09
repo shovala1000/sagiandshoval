@@ -3,6 +3,7 @@ import socket
 import time
 from queue import Empty
 
+import watchdog.events
 from watchdog.observers import Observer
 from utils import *
 
@@ -85,37 +86,72 @@ def main(server_ip, server_port, dir_folder, recognizer, time_waiting, client_in
     my_observer.start()
     # check for changes
     black_events_queue = EventQueue()
+
+    # print('RECOGNIZE: '+recognizer)
     while True:
         s.close()
         time.sleep(int(time_waiting))
         s = init_socket(server_ip, server_port, recognizer, client_index)
         # received start sync
         s.recv(SIZE)
-        save_event_queue = remove_received_changes(my_handler.get_queue(), black_events_queue)
-        print('my_handler.get_queue(): '+str(my_handler.get_queue().queue))
-        print('black_events_queue: '+str(black_events_queue.queue))
-        print('save_event_queue: '+str(save_event_queue.queue))
+        save_event_queue = my_handler.get_queue()
+        temp_queue = EventQueue()
+        while not save_event_queue.empty():
+            current_event = save_event_queue.get()
+            print("current_event: "+str(current_event))
+            if current_event.event_type == watchdog.events.EVENT_TYPE_CLOSED:
+                print("yes1")
+                temp2_queue = EventQueue()
+                print("temp2: "+str(temp2_queue.queue))
+                print("before temp_queue: " + str(temp_queue.queue))
+                while not temp_queue.empty():
+                    temp_event = temp_queue.get()
+                    print("temp_queue: "+str(temp_queue.queue))
+                    if temp_event.event_type == watchdog.events.EVENT_TYPE_CREATED or temp_event.event_type == watchdog.events.EVENT_TYPE_DELETED:
+                        print('temp: '+temp_event.src_path+"\ncurrent: "+current_event.src_path)
+                        if not temp_event.src_path == current_event.src_path:
+                            temp2_queue.put(temp_event)
+                            print("temp_2: "+str(temp2_queue.queue))
+                    else:
+                        temp2_queue.put(temp_event)
+                while not temp2_queue.empty():
+                    temp_queue.put(temp2_queue.get())
+
+            else:
+                temp_queue.put(current_event)
+                print("temp_ queue2: "+str(temp_queue.queue))
+        while not temp_queue.empty():
+            save_event_queue.put(temp_queue.get())
+        print('\nsending this queue: '+str(save_event_queue.queue))
+        remove_received_changes(my_handler.get_queue(), black_events_queue)
         send_changes(save_event_queue, s, dir_folder)
         s.send(os.path.basename(dir_folder).encode(FORMAT))
         # receive changes from server.
         black_events_queue = receive_changes(s, dir_folder)
-        # print('black_events_queue: ' + str(black_events_queue.queue))
+
+
+#         # print('black_events_queue: ' + str(black_events_queue.queue))
 
 
 def remove_received_changes(save_queue, black_queue):
+    print('black_queue: ' + str(black_queue.queue))
+    print('save_queue: ' + str(save_queue.queue))
     temp_queue = EventQueue()
     while not black_queue.empty():
-        # print(str(len(black_queue)))
         black_event = black_queue.get()
+        print('black_event: ' + str(black_event))
         while not save_queue.empty():
             save_event = save_queue.get()
-            if not save_event == black_event:
+            print("save_event: " + str(save_event))
+            if not save_event == black_event:  # and os.path.exists(save_event.src_path):
+                print("save event is not black event")
                 temp_queue.put(save_event)
         while not temp_queue.empty():
             save_queue.put(temp_queue.get())
 
-    # print('black_queue: ' + str(black_queue.queue))
-    # print('save_queue: ' + str(save_queue.queue))
+    print("end save: " + str(save_queue.queue))
+    print("end black: " + str(black_queue.queue))
+    print("end temp: " + str(temp_queue.queue))
     return save_queue
 
 
@@ -125,10 +161,10 @@ if __name__ == "__main__":
     # elif len(sys.argv) == 6:
     #     RECOGNIZE = sys.argv[5]
     RECOGNIZE = CLIENT_NOT_RECOGNIZED
-    # RECOGNIZE = "xhnjOFS0dA7cm12nwMBxgzSSHvpgIqxDUSk0dVTHATvEsZyWafylRqLFMNpO9huJvu0TqRrRlU3W7t3PLQmRymmLTwKEnEMwI4Pj24wr8ESyBSIulQynnzLV839BlPTt"
-    SERVER_IP = "127.0.0.1"  # sys.argv[1]
+    RECOGNIZE = "MhUYunoKfruxxe5B7ogvyABPlIAscZwRdJ5al94Y31fqzCiAnFjvp6yAZctNepzdme5WfCGisdJxtg8iABHkI9qwHLWdQ2l0IybhdwZj7qjneKnDoQxRjYIGJE60pXvR"
+    SERVER_IP = "127.0.0.1"  # "192.168.43.12"  # sys.argv[1]
     SERVER_PORT = "12347"  # sys.argv[2]
-    DIR_FOLDER = "/home/sagi/Desktop/Client2"  # sys.argv[3]
+    DIR_FOLDER = "/home/shoval/Desktop/client2"  # sys.argv[3]
     # DIR_FOLDER = "/home/sagi/PycharmProjects/IntroNetEx2-Client2"  # sys.argv[3]
     TIME = "7"  # sys.argv[4]
     CLIENT_INDEX = CLIENT_HAS_NO_INDEX
