@@ -95,6 +95,9 @@ def main(server_ip, server_port, dir_folder, recognizer, time_waiting, client_in
         # print("we want dir_folder: " + dir_folder)
         # remove from my_handler.get_queue() all the received changes
         save_event_queue = remove_received_changes(my_handler.get_queue(), black_events_queue)
+        print('my_handler.get_queue(): '+str(my_handler.get_queue().queue))
+        print('black_events_queue: '+str(black_events_queue.queue))
+        print('save_event_queue: '+str(save_event_queue.queue))
         send_changes(save_event_queue, s, dir_folder)
         s.send(os.path.basename(dir_folder).encode(FORMAT))
         # receive changes from server.
@@ -125,7 +128,7 @@ if __name__ == "__main__":
     # elif len(sys.argv) == 6:
     #     RECOGNIZE = sys.argv[5]
     RECOGNIZE = CLIENT_NOT_RECOGNIZED
-    RECOGNIZE = "djO2Owuy7QDHDg6q6gTnXvSPMpfbu7OTSEbvpd6NB8iN1vP2jLtvAvgo48CLvAY3oktOJizOOQ5MJsKgZaGFCPgzaVPJwYL6WeYDAIsg9HSpDwGvKbzlm0Z3AfrmKeaN"
+    RECOGNIZE = "ZWHMXejcNuZWd7hLWyR8JtMlGBMKjWx8ICwKxL5B043GRIM8abntMbpK4N2B7vep5G1itZAPrcm1FmEN2fI9UL8RJbALIi2ZARoe0kWmkl8V27hTiX75Z8TyolyeLd1d"
     SERVER_IP = "127.0.0.1"  # sys.argv[1]
     SERVER_PORT = "12347"  # sys.argv[2]
     DIR_FOLDER = "/home/shoval/Desktop/client2"  # sys.argv[3]

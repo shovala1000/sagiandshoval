@@ -135,6 +135,7 @@ def main(server_port, recognizer_size):
                 # # print("queue: "+str(clients_dic[client_recognizer][str(client_index)]))
                 # print("client address: "+str(clients_address_dic[client_recognizer]))
                 save_events_queue = receive_changes(client_socket, clients_address_dic[client_recognizer])
+                print('save_events_queue: '+str(save_events_queue.queue))
                 clients_dic = insert_changes_to_other_clients(clients_dic, client_recognizer, client_index,
                                                               save_events_queue)
                 # receive from client the main_dir name
