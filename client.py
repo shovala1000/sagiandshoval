@@ -125,10 +125,10 @@ if __name__ == "__main__":
     # elif len(sys.argv) == 6:
     #     RECOGNIZE = sys.argv[5]
     RECOGNIZE = CLIENT_NOT_RECOGNIZED
-    # RECOGNIZE = "yWwacjlacW5ro72npGEgCBggZ7BhaDls2udiutjHnavP602lm53KDAT25dQsEIk0EKh6Gf3yy85JOiZAcODZFepgAKQBXL3uMkpJ3HjaPFk0ufa5m70Hlk9W6tkOVaps"
+    RECOGNIZE = "5RfOfXOEVXsj1dNqEU01jveji0cCShvksS3G9Wqxx3dote6YVfSgKLuymAk6CwhyGux35S9jKtqBrE30wnnaIbfPbXtTAHZ5n7bUggaE8QlGdDGgB1KIYIxA4yW0J9rR"
     SERVER_IP = "127.0.0.1"  # sys.argv[1]
     SERVER_PORT = "12347"  # sys.argv[2]
-    DIR_FOLDER = "/home/shoval/Desktop/client1"  # sys.argv[3]
+    DIR_FOLDER = "/home/shoval/Desktop/client2"  # sys.argv[3]
     # DIR_FOLDER = "/home/sagi/PycharmProjects/IntroNetEx2-Client2"  # sys.argv[3]
     TIME = "7"  # sys.argv[4]
     CLIENT_INDEX = CLIENT_HAS_NO_INDEX

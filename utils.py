@@ -167,8 +167,8 @@ def receive_files_from_path(s, des_folder_path):
     while not file_name == END_FILES:
         # creates the file
         file_path = os.path.join(des_folder_path, file_name)
-#         # print("file name is: " + file_name)
-#         # print("file_path is: " + file_path)
+        #         # print("file name is: " + file_name)
+        #         # print("file_path is: " + file_path)
         with open(file_path, 'wb') as f:
             file_data = s.recv(SIZE)
             s.send(b'file_data received')
@@ -232,10 +232,10 @@ def send_changes(event_queue, s, source_path):
         s.send(event_type.encode(FORMAT))
         s.recv(SIZE)
 
-        print('event_type is: ' +event_type)
+        print('event_type is: ' + event_type)
         print('src_path is: ' + src_path)
-        print('dest_path is: '+dest_path)
-        print('is_directory is: '+str(is_directory))
+        print('dest_path is: ' + dest_path)
+        print('is_directory is: ' + str(is_directory))
         print('source_path is: ' + source_path)
         print('os.path.relpath(src_path,source_path) --' + os.path.relpath(src_path, source_path))
 
@@ -294,7 +294,7 @@ def receive_changes(s, dir_path):
     event_type = s.recv(SIZE).decode(FORMAT)
     s.send(b'type received')
     while not "End" == event_type:
-        print('event_type in receiving changes: '+event_type)
+        print('event_type in receiving changes: ' + event_type)
         # receive event "relative" src_path
         src_path = s.recv(SIZE).decode(FORMAT)
         s.send(b'src_path received')
@@ -308,26 +308,26 @@ def receive_changes(s, dir_path):
             s.send(b'dest_path received')
         # receive if is directory
         is_directory = s.recv(SIZE).decode(FORMAT)
-        print("is_dir: "+str(is_directory) )
+        print("is_dir: " + str(is_directory))
         s.send(b'is_directory received')
         # receive event according to the type protocol
         if watchdog.events.EVENT_TYPE_CREATED == event_type:
             on_created_protocol(is_directory, src_path, s, dir_path)
-            if is_directory:
+            if 'True' == is_directory:
                 save_event_queue.put(DirCreatedEvent(src_path))
             else:
                 save_event_queue.put(FileCreatedEvent(src_path))
 
         elif watchdog.events.EVENT_TYPE_DELETED == event_type:
             on_deleted_protocol(is_directory, src_path, dir_path)
-            if is_directory:
+            if 'True' == is_directory:
                 save_event_queue.put(DirDeletedEvent(src_path))
             else:
                 save_event_queue.put(FileDeletedEvent(src_path))
 
         elif watchdog.events.EVENT_TYPE_MOVED == event_type:
             on_moved_protocol(is_directory, src_path, dest_path, s, dir_path)
-            if is_directory:
+            if 'True' == is_directory:
                 save_event_queue.put(DirMovedEvent(src_path, dest_path))
             else:
                 save_event_queue.put(FileMovedEvent(src_path, dest_path))
@@ -352,11 +352,11 @@ def on_created_protocol(is_directory, src_path, s, current_path):
     :param s: is the socket
     :return: no returning value.
     """
-    print('on_created_protocol: src: '+src_path)
-    print('on_created_protocol: current: '+current_path)
+    print('on_created_protocol: src: ' + src_path)
+    print('on_created_protocol: current: ' + current_path)
     path = src_path
     # is_directory = str(os.path.isdir(path))
-    print('on_created_protocol: isdir: '+is_directory)
+    print('on_created_protocol: isdir: ' + is_directory)
     if not os.path.exists(path):
         if 'True' == is_directory:
             os.makedirs(path)
@@ -377,11 +377,11 @@ def on_deleted_protocol(is_directory, src_path, current_path):
     :param current_path: is the current path of a dir.
     :return: no return value.
     """
-    print('on_deleted_protocol: src: '+src_path)
+    print('on_deleted_protocol: src: ' + src_path)
     # print('on_created_protocol: current: '+current_path)
     # path = src_path  # os.path.join(current_path, os.path.relpath(src_path))
     # is_directory = str(os.path.isdir(src_path))
-    print('on_deleted_protocol: isdir: '+is_directory)
+    print('on_deleted_protocol: isdir: ' + is_directory)
     if os.path.exists(src_path):
         if 'True' == is_directory:
             if 0 == len(os.listdir(src_path)):
@@ -403,10 +403,10 @@ def on_moved_protocol(is_directory, src_path, des_path, s, current_path):
     :param current_path: is the current path of a dir.
     :return: no returning value.
     """
-    print('on_moved_protocol: src: '+src_path)
-    print('on_moved_protocol: current: '+current_path)
+    print('on_moved_protocol: src: ' + src_path)
+    print('on_moved_protocol: current: ' + current_path)
     # is_directory = str(os.path.isdir(src_path))
-    print('on_moved_protocol: isdir: '+is_directory)
+    print('on_moved_protocol: isdir: ' + is_directory)
     if os.path.exists(src_path):
         on_created_protocol(is_directory, des_path, s, current_path)
         on_deleted_protocol(is_directory, src_path, current_path)
@@ -423,10 +423,10 @@ def on_closed_protocol(is_directory, src_path, s, current_path):
     :param current_path: is the current path of a dir.
     :return: no returning value.
     """
-    print('on_closed_protocol: src: '+src_path)
-    print('on_closed_protocol: current: '+current_path)
+    print('on_closed_protocol: src: ' + src_path)
+    print('on_closed_protocol: current: ' + current_path)
     # is_directory = str(os.path.isdir(src_path))
-    print('on_closed_protocol: isdir: '+is_directory)
+    print('on_closed_protocol: isdir: ' + is_directory)
     if os.path.exists(src_path):
         on_created_protocol(is_directory, src_path, s, current_path)
 
